@@ -31,12 +31,38 @@ where sex = 'F' and race = '01';
 
 
 
+/* "Select...Where...In..." 
+   "Select...Where...Like..."
+*/
+-- Ex: How many patients have been diagnosed with ALS? 
+
+
+-- Ex: How many patients have been diagnosed with Motor Neuron Disease? 
+
+
+-- Ex: How many patients have been diagnosed with Hypertensive Disease (I, )? 
+
+
+
+
+/* "...Order by..." 
+   "...min()...", "max()..."
+*/
+
+-- Ex: When is the most recent inpatient visit to our healthcare system? 
+
+
+-- Ex: Who is the oldest patient ever recorded in our healthcare system? (assume they are all still alive) 
+
+
+
 
 /* "...Group by..." */
 -- Ex: How many patients for each racial group?
 
 
--- Ex: How many visits for each encounter type (e.g., ED, AV, IP,...)
+-- Ex: Generate two frequency tables for different encounter type (e.g., ED, AV, IP,...) in 2019 vs. 2020? 
+
 
 
 
@@ -48,32 +74,52 @@ where sex = 'F' and race = '01';
 -- Ex: Collect all secrum creatinine lab results
 
 
-
-/* "With...As..." */
--- Ex: How many pediatric patients have ever been hospitalized at MUHC? 
+-- Ex: Collect the list of all Office visits
 
 
--- Ex: What is the median age of ALS patients when they were first diagnoized? 
+-- Ex: Collect all patients who had a record of SBP >= 140mmhg
 
 
-
-/* "...Case when..." */
--- Ex: Following the WHO definition, how many adult patients are underweight, normal, overweight and obese? 
+-- Ex: Collect all patients with a historical diagnosis of hypertensive diease
 
 
 
--- Ex: 
+/* "Drop table..." */
 
 
 /* "...Join...On" 
    "...Left Join...On"
    "...Right Join...On"
 */
--- Ex: 
+-- Ex: How many pediatric patients have ever been hospitalized at MUHC? 
 
 
 
+-- Ex: How many inpatient encounters with patients staying in hospital for >= 2days and had at least 1 record of elevated serum creatinine during the stay (SCr > 4mg/dL)?
 
 
-/* "Drop table..." */
+
+-- Ex: Identify patients with uncontrolled blood pressure
+--       a. SBP>=160mmhg at an office visit
+--       b. SBP>=140mmhg at an office visit with a history of hypertensive disease
+--       c. SBP>=140mmhg at two office visits on different dates
+
+
+-- Ex: What is the median age of ALS patients when they were first diagnosed with ALS? 
+
+
+
+-- Ex: What is the mortality rate of ALS patients seen in our system?  
+
+
+/* "...Case when..." */
+-- Ex: How many patients for each race group? This time we want to do some more groupings: 
+--     - group NI and UN into a single UN group, called 'NI'
+--     - group minor race groups into 'OT' ('','','','','')
+
+
+-- Ex: Following the WHO definition, how many adult patients are underweight, normal, overweight and obese? 
+
+
+
 
