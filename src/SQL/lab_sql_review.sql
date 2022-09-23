@@ -6,38 +6,50 @@
 */
 
 -- programmatically setup worksheet parameters
-use role CLASS_MEMBER_XSM7F;
+use role CLASS_MEMBER_XSM7F; -- replace XSM7F with your own username
 use warehouse NEXTGENBMI_WH;
-use database CLASS_MEMBER_XSM7F_DB;
-use schema public;
+use database CLASS_MEMBER_XSM7F_DB; -- replace XSM7F with your own username
+use schema PUBLIC;
 
 /* "Select..." */
 -- Ex: How many patients in total do we have in our CDM datamart? 
-select count(patid) from deidentified_pcornet_cdm.demographic;
-select count(distinct patid) from deidentified_pcornet_cdm.demographic;
+select count(patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC;
+select count(distinct patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC;
 
 -- Ex: How many encounters in total do we have in our CDM datamart? 
-
+select count(distinct encounterid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC;
 
 /* "Select...Where..." */
 -- Ex: How many Asian females have ever been seen in our healthcare system? 
-select count(patid) from deidentified_pcornet_cdm.demographic
-where sex = 'F' and race = '01';
+select count(distinct patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC
+where sex = 'F' and race = '02';
 
 -- Ex: How many Asian or African American patients have ever been seen in our healthcare system? 
-
+select count(distinct patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC
+where race='02' or race = '03';
 
 -- Ex: How many patients have ever been seen in our healthcare system who are currently above 65 years old? 
+/*you can take the year difference*/
+select count(patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC
+where datediff(year,birth_date,current_date) > 65;
 
+/*dividing the age in days by the number of days in a year gives a slightly more accurate result. 
+  The .25 is to take into account leap years.*/
+select count(patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DEMOGRAPHIC
+where datediff(day,birth_date,current_date)/365.25 > 65;
 
 
 /* "Select...Where...In..." 
    "Select...Where...Like..."
 */
 -- Ex: How many patients have been diagnosed with ALS? 
-
+select count(distinct patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DIAGNOSIS
+where dx in ('335.20','G12.21');
 
 -- Ex: How many patients have been diagnosed with Motor Neuron Disease? 
+create table mnd_count as
+select count(distinct patid) as pat_cnt from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DIAGNOSIS
+where dx like '335.2%' or dx like 'G12.2%';
 
 
 -- Ex: How many patients have been diagnosed with Hypertensive Disease (I, )? 
@@ -87,9 +99,9 @@ where sex = 'F' and race = '01';
 /* "Drop table..." */
 
 
-/* "...Join...On" 
-   "...Left Join...On"
-   "...Right Join...On"
+/* "...(Inner) Join...On..." 
+   "...Left Join...On..."
+   "...Right Join...On..."
 */
 -- Ex: How many pediatric patients have ever been hospitalized at MUHC? 
 
