@@ -47,12 +47,10 @@ select count(distinct patid) from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DI
 where dx in ('335.20','G12.21');
 
 -- Ex: How many patients have been diagnosed with Motor Neuron Disease? 
-create table mnd_count as
 select count(distinct patid) as pat_cnt from DEIDENTIFIED_PCORNET_CDM.CDM_2022_JULY.DEID_DIAGNOSIS
 where dx like '335.2%' or dx like 'G12.2%';
 
-
--- Ex: How many patients have been diagnosed with Hypertensive Disease (I, )? 
+-- Ex: How many patients have been diagnosed with Hypertensive Disease (I10, I11, I12, I13, I14, I15, I16)? 
 
 
 
