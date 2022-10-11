@@ -189,19 +189,23 @@ An ODBC driver have been pre-installed in your windows system. Click “start”
 To configure the ODBC driver in a Windows environment, follow the next steps described in [this post](https://docs.snowflake.com/en/user-guide/odbc-windows.html#step-2-configure-the-odbc-driver) to create the ODBC DSN and test if the ODBC DSN is working fine with the following parameters:
 
 ```
-1.  Data Source: snowflake_cdm
+1.  Data Source: snowflake_deid
 2.  User: [your snowflake username]
-3.  Password: [your snowflake password]
+3.  Password: leave it blank, as you will need to specify it later when calling this ODBC connector
 4.  Server:[snowflake_account_name].us-east-2.aws.snowflakecomputing.com
-5.  Database: e.g., NEXTGEN_MUIRB######, DEIDENTIFIED_PCORNET_CDM
-6.  Schema: e.g., CDM_2022_MAY
-7.  Warehouse: e.g., NEXTGEN_WH, ANALYTICS_WH
-8.  Role: e.g.,NEXTGEN_MUIRB######, ANALYTICS
+5.  Database: [snowflake database you want to connect to] e.g., NEXTGEN_MUIRB######, DEIDENTIFIED_PCORNET_CDM
+6.  Schema: [snowflake schema you want to connect to] e.g., CDM_2022_MAY
+7.  Warehouse: [snowflake warehouse you want to use] e.g., NEXTGEN_WH, ANALYTICS_WH
+8.  Role: [snowflake role you are pre-assigned to] e.g.,NEXTGEN_MUIRB######, ANALYTICS
 9.  Tracing: 6
+10. Authenticator:
 ```
-Note: once your snowflake has been activated, the `[snowflake_account_name]` can be found from the url link to snowflake log-in page.  
+Note: once your snowflake has been activated, the `[snowflake_account_name]` can be found from the url link to snowflake log-in page. `Database` and `Schema` are optional. You may have visibility to all other databases and schema once the connection is established. However, you may not be able to query all databases depending on your role privilege on the Snowflake side.
 
-`Database` and `Schema` are optional. You may have visibility to all other databases and schema once the connection is established. However, you may not be able to query all databases depending on your role privilege on the Snowflake side.
+## Step 2a: Configure ODBC Driver with UMSystem Shibboleth
+If using "UMSystem Shibboleth" method to log-in, the following additional configuration will be needed: 
+a. Your `User` will be your university email address (e.g. xxxx@umsystem.edu). 
+b. The `Authenticator` parameter needs to set to `externalbrowser`
 
 ## Connect to Snowflake with ODBC driver
 ### Step 1: Save Credentials as Environment Variable
@@ -209,13 +213,12 @@ As security best practice, you never want to have any of your credentials inline
 
 ```
 # add snowflake log-in credentials as environment variables
-Sys.setenv(ODBC_DSN_NAME = 'XXXXX',
-           SNOWFLAKE_USER = 'XXXXXXX',
-           SNOWFLAKE_PWD = 'XXXXXXX')
+Sys.setenv(ODBC_DSN_NAME = 'XXXXX', # the same as the value in the Data Source field from ODBC driver setup
+           SNOWFLAKE_USER = 'XXXXXXX', # the same as the value in the User field from ODBC driver setup
+           SNOWFLAKE_PWD = 'XXXXXXX' # leave it as empty string (''), when with UMSystem Shibboleth option 
+           )
 ```
-After saving the file, restart R (`.rs.restartR()`), and run
-`Sys.getenv()` to make sure that the environment variables are
-successfully loaded. 
+After saving the file, restart R (`.rs.restartR()`), and run `Sys.getenv()` to make sure that the environment variables are successfully loaded. 
 
 ### Step 2: Make database connection call
 You will need to install the `DBI` and `odbc` packages before making the database. You can then make the database connection call by implicitly calling for the credentials saved in the environment:
