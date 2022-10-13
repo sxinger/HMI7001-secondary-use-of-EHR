@@ -107,6 +107,6 @@ dat1_txt<-read.table("C:/Users/Administrator/Documents/classHMI7001/data/als_pt_
 
 Let's load in another data table with Riluzole data (exposure of interest)
 ```{r}
-dat2<-tbl(myconn,sql("select * from ALS.ALS_RILUZOLE"))
+dat2<-tbl(myconn,sql("select * from ALS.ALS_RILUZOLE")) %>% collect()
 saveRDS(dat2,file="C:/Users/Administrator/Documents/classHMI7001/data/als_riluzole.rda")
 ```
