@@ -28,10 +28,10 @@ Use `DBI:dbConnect` and `odbc::odbc()` function with stored credentials to make 
 
 ```{r db_connection}
 # you can directly put your credential in the function
-myconn <- DBI::dbConnect(drv = odbc::odbc(),
-                         dsn = Sys.getenv("XXXXXX"),
-                         uid = Sys.getenv("XXXXXXX"),
-                         pwd = Sys.getenv("XXXXXXXX"))
+# myconn <- DBI::dbConnect(drv = odbc::odbc(),
+#                          dsn = Sys.getenv("XXXXXX"),
+#                          uid = Sys.getenv("XXXXXXX"),
+#                          pwd = Sys.getenv("XXXXXXXX"))
 
 # or just in case you may accidentally copy out your credentials out together with your R codes
 # you can save the credentials as an environment parameter and call it using an alias
@@ -107,6 +107,6 @@ dat1_txt<-read.table("C:/Users/Administrator/Documents/classHMI7001/data/als_pt_
 
 Let's load in another data table with Riluzole data (exposure of interest)
 ```{r}
-dat2<-table(myconn,sql("select * from ALS.ALS_RILUZOLE"))
+dat2<-tbl(myconn,sql("select * from ALS.ALS_RILUZOLE"))
 saveRDS(dat2,file="C:/Users/Administrator/Documents/classHMI7001/data/als_riluzole.rda")
 ```

@@ -9,56 +9,35 @@ Let's do some preparation for the class by running the following chunk of codes:
 
 ```{r setup, include=FALSE}
 #set up rmd print-out style
-knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
+knitr::opts_chunk$set(message=F,
+                      warning=F,
+                      fig.width=6, 
+                      fig.height=3)
 
-#load packages
-#--need to install on older verion of "lme4" package for VIM to be installed
-#--just need to run once
-# packageurl <- "https://cran.r-project.org/src/contrib/Archive/nloptr/nloptr_1.2.1.tar.gz"
-# install.packages(packageurl, repos=NULL, type="source")
-
-#--now, install all the packages for this script
-pacman::p_load(tidyverse, VIM, mice)
-
-#~1min
+#install all the packages for this script
+pacman::p_load(tidyverse,# data cleaning packages
+               dbplyr, # R function interfacing with SQL db
+               mice # missing data detection and imputation
+               )
 ```
 
-
-```{r db_connection}
-config_file<-read.csv("config.csv",stringsAsFactors = F)
-drv<-RJDBC::JDBC(driverClass="oracle.jdbc.OracleDriver",
-                 classPath="./ojdbc6.jar")
-url<-paste0("jdbc:oracle:thin:@localhost:1521:",config_file$database)
-conn <- RJDBC::dbConnect(drv=drv,
-                         url=url, 
-                         user=config_file$username, 
-                         password=config_file$password)
+```{r}
+pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/als_pt_table.rda")
+riluz_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/als_riluzole.rda")
 ```
-
-
-```{sql, connection=conn, output.var="idd_pt"}
-select * from XSONG.PRVM_IDD_PATIENT_VIEW
-```
-
-
-**************************************************************************************************
-**************************************************************************************************
 
 ## Quantitative and Qualitative Data (11.2.3)
 
-#### Qualitative Data
+#### Qualitative Data (categorical data)
 
-* also called "categorical data", which cannot be expressed numerically     
-
-  * nominal: when there is no natural ordering among the categories (e.g. sex, race)    
+**nominal data**
 
 ```{r nom_data}
-ggplot(idd_pt,aes(x=RACE))+
+ggplot(pt_tbl,aes(x=RACE))+
   geom_histogram(stat="count")
 ```
 
-  * ordinal: when there is a natural ordering among the categories (e.g. age_group, grades) 
-
+**ordinal**
 
 ```{r ord_data}
 ##==============================================
@@ -66,181 +45,68 @@ ggplot(idd_pt,aes(x=RACE))+
 # "case_when" function
 ##==============================================
 
-#add a new column, "age_group", that groups ages into 4 groups
-idd_pt_add_agegrp<-idd_pt %>%
-  mutate(age_group=case_when(AGE<10~'Group1',
-                             AGE>=10&AGE<15~'Group2',
-                             AGE>=15&AGE<20~'Group3',
-                             AGE>=20~'Group4'))
+#add a new column, "age_group", that groups ages into 5 groups
+pt_tbl_add_agegrp<-pt_tbl %>%
+  mutate(age_group=case_when(AGE_AT_ALS1DX<65~'Group1',
+                             AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'Group2',
+                             AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'Group3',
+                             AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'Group4',
+                             AGE_AT_ALS1DX>=80~'Group5'))
 #print first 6 rows
-head(idd_pt_add_agegrp)
+head(pt_tbl_add_agegrp)
 
 #plot out the age group
-ggplot(idd_pt_add_agegrp,aes(x=age_group))+
-  geom_histogram(stat="count")
+ggplot(pt_tbl_add_agegrp,aes(x=age_group))+
+  geom_bar(stat="count")
 ```
 
 
 
 **********************************                     
 
-#### Quantitative Data
-* can be measured, written down with numbers and manipulated numerically (i.e. age, BMI, blood pressure, variety of labs)   
-  * discrete: data that can only taken certain values (e.g. number of visits)   
-  * continuous: data tha can take any values (e.g. age, weights)    
-    
+#### Quantitative Data (numerical data)
+
+**discrete data**
+
 ```{r cont_dat}
-ggplot(idd_pt,aes(x=AGE))+
+ggplot(pt_tbl,aes(x=AGE_AT_ALS1DX))+
+  geom_histogram(fill="blue",bins = 40)
+
+#5-number summary
+table(pt_tbl$AGE_AT_ALS1DX)
+```
+
+**continuous data**
+
+```{r cont_dat}
+ggplot(pt_tbl,aes(x=AGE_AT_ALS1DX))+
   geom_density(fill="blue")
 
 #5-number summary
-summary(idd_pt$AGE)
+summary(pt_tbl$AGE_AT_ALS1DX)
 ```
 
 **************************************************************************************************
 **************************************************************************************************
 
-## Data Preprocessing (Chapter 12, 13, 14)
+## Data Preprocessing
 
-* A series of steps to transform raw data into a **"clean"** and **"tidy"** dataset prior to statistical analysis
-* EHR data were collected for clinical and billing purposes, not necessarily for research purposes
-* Preprcoessing aims at improving the quality of data to allow for reliable statistical analysis
-* General steps for data preprocessing are **Data Integration**, **Data Abstraction**, **Data Cleaning**, **Data Transformation** and **Data Reducton**. 
-
-**************************************************************************************************
-**************************************************************************************************
-
-### Data Integration
-* A process of combining data derived from various data sources (e.g. databases, flat files, tables) into a consistent dataset
-* One example as we have exercised in SQL is for you to create mini-tables for a subset of variables and then join them together
-* This step can be accomplished in any analytical software available on greenheron (e.g. SQL, R, SAS, STAT, Python), but we usually recommend SQL for its efficiency
-
-
-#####*Motivation example: I want to examine if there is a significant difference of BMI among the three groups of adult patients: just down, just autism (autism spectrum disorder), and both*
-
-```{sql integrate_data,connection = conn,output.var="asd_down_bmi"}
---note to self: need to make sure that students all have access to the following tables on Oracle: 
--- xsong.prvm_idd_data_view2
--- xsong.prvm_idd_patient_view2
--- xsong.prvm_idd_code_info_view2
-with both_dx1 as (
-select d.patient_num
-      ,c.code_label
-      ,min(d.start_date) first_dxdt
-from xsong.prvm_idd_data_view2 d
-join xsong.prvm_idd_code_info_view c
-on d.code = c.code
-where lower(c.code_label) like '%down%' or 
-      lower(c.code_label) like '%autism%'
-group by d.patient_num, c.code_label
-),
-     either_dx1 as (
-select patient_num, min(first_dxdt) first_dxdt
-from both_dx1
-group by patient_num
-),
-     down_dx1 as (
-select patient_num, min(first_dxdt) down_onset
-from both_dx1
-where lower(code_label) like '%down%'
-group by patient_num
-),
-     autism_dx1 as (
-select patient_num, min(first_dxdt) autism_onset
-from both_dx1
-where lower(code_label) like '%autism%'
-group by patient_num
-),
-     osa_dx1 as (
-select patient_num, min(d.start_date) osa_onset
-from xsong.prvm_idd_data_view2 d
-join xsong.prvm_idd_code_info_view c
-on d.code = c.code
-where lower(c.code_label) like '%sleep%'
-group by d.patient_num
-),
-     bmi as (
-select dat.patient_num, to_number(dat.nval) as bmi, dat.start_date as bmi_date
-from xsong.prvm_idd_data_view2 dat
-where exists (select 1 from xsong.prvm_idd_code_info_view cd
-              where cd.code = dat.code and
-                    lower(cd.code_label) like '%mass%') 
-)
-select distinct
-       e.patient_num
-      ,p.birth_date
-      ,p.sex
-      ,p.race
-      ,p.death_date
-      ,d.down_onset
-      ,a.autism_onset
-      ,osa.osa_onset
-      ,round((a.autism_onset-p.birth_date)/365.25) age_at_autism
-      ,round((d.down_onset-p.birth_date)/365.25) age_at_down
-      ,round((e.first_dxdt-p.birth_date)/365.25) age_at_firstdx
-      ,case when a.autism_onset is not null and d.down_onset is not null then 'both'
-            when a.autism_onset is not null and d.down_onset is null then 'autism'
-            when d.down_onset is not null and a.autism_onset is null then 'down'
-       end as diagnosis
-      ,round((osa.osa_onset-p.birth_date)/365.25) age_at_osa
-      ,bmi.bmi
-      ,bmi.bmi_date
-from either_dx1 e
-join xsong.prvm_idd_patient_view p on e.patient_num = p.patient_num
-left join down_dx1 d on e.patient_num = d.patient_num 
-left join autism_dx1 a on e.patient_num = a.patient_num
-left join osa_dx1 osa on e.patient_num = osa.patient_num
-left join bmi on e.patient_num = bmi.patient_num
-where bmi.bmi_date >= least (coalesce(a.autism_onset,current_date),
-                               coalesce(d.down_onset,current_date)) or 
-      bmi.bmi_date is null            
-```
-
-Note that we only want to include *adult* patients, let's do a quick cleaning up:
-
-```{r}
-##==============================================
-# "filter" function for subsetting rows satifying 
-#  certain criteria
-##==============================================
-asd_down_bmi<-asd_down_bmi %>%
-  filter(AGE_AT_FIRSTDX >= 18)
-```
-
-Let's take a look at few rows of this integarted `asd_down_bmi` data table:
-
-```{r}
-##==============================================
-# "slice" function for subsetting rows
-# "select" function for subsetting columns
-##==============================================
-# only select the first 10 rows and columns (PATIENT_NUM,DIAGNOSIS,AGE_AT_FIRSTDX,BMI,BMI_DATE) for quick inspection
-asd_down_bmi %>%
-  select(PATIENT_NUM,DIAGNOSIS,AGE_AT_FIRSTDX,BMI,BMI_DATE) %>%
-  slice(1:10)
-```
-
-
-**************************************************************************************************
-**************************************************************************************************
+General steps for data preprocessing are **Data Integration**, **Data Abstraction**, **Data Cleaning**, **Data Transformation** and **Data Reduction**. 
 
 ### Data Abstraction
-As you can see, there are still multiple rows for the same patient due to multiple BMI records. To get a analytic set with one patient observation per row, we need to perform a data processing step called "data abstraction". "Data abstraction" is usually needed when repeated measurement of the same variable exists (e.g. multiple bmi records over time), and we want to remove some physical, spacial or temporal details in order to focus attention on information with higher importance (e.g. we use average/mean bmi before cardiovascular disease onset to capture the core information about the patient's unhealthy weight status)
+As you can see, in the `riluzole_tbl`, there are multiple medication entries for the drug riluzole. To get an analytic set with **one patient observation per row**, we need to perform the **data abstraction** step.
 
-There are many different methods for data abstractions, which can be as simple as "using the first observation" or "taking the average", or as complex as "feature extraction using principle component analysis (PCA)" or "building a markov chain". Which method to use really depends on your research context and feasibility consideration. 
-
-We will demonstrate a simple data abstraction method in R, which can also be achieved in SQL
-
-```{r get_median_bmi}
+```{r}
 ##======================================================
 # "group_by" and "summarize" function for summarizing 
 #  variables according to certain grouping criteria and
 #  functions of interests
 ##======================================================
-asd_down_bmi_median<-asd_down_bmi %>%
-  group_by(PATIENT_NUM,SEX,RACE,AGE_AT_FIRSTDX,DIAGNOSIS) %>%
-  summarize(bmi_median = median(BMI)) %>%
-  ungroup
+riluz_tbl_dur<-riluz_tbl %>%
+  group_by(PATID) %>%
+  summarize(riluz_begin = min(START_DATE),
+            riluz_end = max(START_DATE),
+            .groups = "drop")
 ```
 
 
@@ -253,6 +119,17 @@ asd_down_bmi_median %>% sample_n(5)
 
 **************************************************************************************************
 **************************************************************************************************
+
+### Data Integration
+* A process of combining data derived from various data sources (e.g. databases, flat files, tables) into a consistent dataset
+* One example as we have exercised in SQL is for you to create mini-tables for a subset of variables and then join them together to form the final **analytical dataset**
+* Data integration can be accomplished in SQL database, or deferred to the analysis step in R. 
+
+
+**************************************************************************************************
+**************************************************************************************************
+
+
 
 ### Data Cleaning 
 Real world data are usually "messy" due to a variety of reasons:
@@ -271,7 +148,7 @@ Real world data are usually "messy" due to a variety of reasons:
 
 Obvious Inconsistencies: occur when a record contains a value or combination of values that cannot correspond to a real-world situation
 
-Outliers: also called abnormalities, discordants, deviants, and anomalies, are a data point which is difference from the remaining data. Outliers not only include errors but also dicordant data that arises from natural variationm, which may carry interesting information (e.g. fraud detection). 
+Outliers: also called abnormalities, discordants, deviants, and anomalies, are a data point which is difference from the remaining data. Outliers not only include errors but also dicordant data that arises from natural variation, which may carry interesting information (e.g. fraud detection). 
 
 ```{r bmi_density}
 # a density plot of bmi for all patients
@@ -720,4 +597,3 @@ data_final<-asd_down_bmi_median_imp3 %>%
 
 saveRDS(data_final,file="./idd_bmi_final.rda")
 ```
-
