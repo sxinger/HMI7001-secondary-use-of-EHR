@@ -182,12 +182,26 @@ final_set %>%
 
 
 ```{r}
+##=====================================================
+# "replace_na" function for quick imputation using
+# a constant value
+##=====================================================
+final_set<-final_set %>%
+  replace_na(list(RACE='UN'))
 
+final_set %>%
+  missing_pattern(dependent,explanatory)
 ```
-
-#### Data Cleaning - Outlier, Obvious Inconsistencies
-
 
 
 ### Data Transformation
+
 #### One-hot encoding 
+```{r}
+race_ohe<-final_set %>% 
+  dplyr::select(PATID,RACE) %>%
+  mutate(ind=1) %>%
+  spread(RACE,ind, fill = 0)
+
+head(race_ohe)
+```
