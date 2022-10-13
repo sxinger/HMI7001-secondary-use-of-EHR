@@ -17,7 +17,7 @@ knitr::opts_chunk$set(message=F,
 #install all the packages for this script
 pacman::p_load(DBI,odbc, # database connection
                tidyverse,# data cleaning packages
-               dbplyr # R function interfacing with SQL db
+               dbplyr # R package interfacing with SQL db
                )
 ```
 
@@ -27,6 +27,14 @@ First, let us follow the [Service Workbench User Manual](https://github.com/sxin
 Use `DBI:dbConnect` and `odbc::odbc()` function with stored credentials to make database connection. Due to re-direction to Umsystem log-in page with the Shibboleth method, you may not be able to Knit this report at once. 
 
 ```{r db_connection}
+# you can directly put your credential in the function
+myconn <- DBI::dbConnect(drv = odbc::odbc(),
+                         dsn = Sys.getenv("XXXXXX"),
+                         uid = Sys.getenv("XXXXXXX"),
+                         pwd = Sys.getenv("XXXXXXXX"))
+
+# or just in case you may accidentally copy out your credentials out together with your R codes
+# you can save the credentials as an environment parameter and call it using an alias
 myconn <- DBI::dbConnect(drv = odbc::odbc(),
                          dsn = Sys.getenv("ODBC_DSN_NAME"),
                          uid = Sys.getenv("SNOWFLAKE_USER"),
