@@ -45,11 +45,11 @@ ggplot(pt_tbl,aes(x=RACE))+
 ##==============================================
 #add a new column, "age_group", that groups ages into 5 groups
 pt_tbl_add_agegrp<-pt_tbl %>%
-  mutate(age_group=case_when(AGE_AT_ALS1DX<65~'Group1',
-                             AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'Group2',
-                             AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'Group3',
-                             AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'Group4',
-                             AGE_AT_ALS1DX>=80~'Group5'))
+  mutate(age_group=case_when(AGE_AT_ALS1DX<65~'AgeGrp1',
+                             AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'AgeGrp2',
+                             AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'AgeGrp3',
+                             AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'AgeGrp4',
+                             AGE_AT_ALS1DX>=80~'AgeGrp5'))
 #print first 6 rows
 head(pt_tbl_add_agegrp)
 ```
@@ -75,9 +75,6 @@ ggplot(pt_tbl_only_agegrp,aes(x=age_group))+
 ```{r cont_dat}
 ggplot(pt_tbl,aes(x=AGE_AT_ALS1DX))+
   geom_histogram(fill="blue",bins = 40)
-
-#5-number summary
-table(pt_tbl$AGE_AT_ALS1DX)
 ```
 
 **continuous data**
@@ -111,6 +108,8 @@ riluz_tbl_dur<-riluz_tbl %>%
   summarize(riluz_begin = min(RX_ORDER_DATE),
             riluz_end = max(RX_START_DATE),
             .groups = "drop")
+
+head(riluz_tbl_dur)
 ```
 
 
@@ -134,6 +133,7 @@ riluz_tbl_dur<-riluz_tbl_dur %>%
 A good strategy for data integration is to conceptualize what you want your final analytic dataset to look like even before data collection, guided by the following questions:
 * will the final analytic dataset be **one patient per row** or **one encounter per row** or **one particular event per row**?
 * what will be the layout of the final analytic dataset? More specifically, what are the columns in the final analytic dataset? 
+* if repeated measurements exist for a variable, what *data abstraction** step you want to perform on it? 
 
 Let's form a simple analytic dataset with: 
 1. one patient per row;
@@ -144,7 +144,7 @@ Let's form a simple analytic dataset with:
 
 ```{r}
 ##========================================================
-# "left_join" or "inner_joint function to integrate
+# "left_join" or "inner_join" function to integrate
 # multiple tables together
 ##========================================================
 final_set<-pt_tbl %>%
@@ -157,6 +157,8 @@ final_set<-pt_tbl %>%
                               is.na(DAYS_ALS1DX_TO_DEATH) & DAYS_ALS1DX_TO_CENSOR<=365 ~ NA_real_,
                               TRUE ~ 0)) %>%
   select(PATID,SEX,RACE,AGE_AT_ALS1DX,RILUZ_DUR,RILUZ_IND,DAYS_ALS1DX_TO_DEATH,DAYS_ALS1DX_TO_CENSOR,MORT_IND, MORT_1YR)
+
+head(final_set)
 ```
 
 
@@ -165,15 +167,41 @@ final_set<-pt_tbl %>%
 
 ### Data Cleaning 
 
-#### Data Cleaning - Missing Data 
+#### Check for Data Duplications
 
 ```{r}
-##=====================================================
-# "str" function is a handy function for quick check of
-# data.frame structure 
-##=====================================================
-str(final_set)
+##========================================================
+# "group_by" function to collect stratified summaries
+#
+# "arrange" function to order data.frame according 
+#  one/many index columns
+##========================================================
+final_set %>%
+  group_by(PATID) %>% 
+  filter(n()>1) %>%
+  arrange(PATID) %>%
+  ungroup
 ```
+
+```{r}
+##========================================================
+# "group_by"+"filter" to de-duplicate
+##========================================================
+final_set<-final_set %>%
+  group_by(PATID) %>%
+  filter(DAYS_ALS1DX_TO_DEATH == min(DAYS_ALS1DX_TO_DEATH) | is.na(DAYS_ALS1DX_TO_DEATH)) %>%
+  ungroup
+
+final_set %>%
+  group_by(PATID) %>% 
+  filter(n()>1) %>%
+  arrange(PATID) %>%
+  ungroup
+```
+
+
+
+#### Data Cleaning - Missing Data 
 
 ```{r}
 ##========================================================
@@ -183,7 +211,7 @@ str(final_set)
 # 
 # more on: https://finalfit.org/
 ##======================================================== 
-explanatory = c("RACE","RILUZ_DUR")
+explanatory = c("SEX","RACE","AGE_AT_ALS1DX","RILUZ_DUR","RILUZ_IND")
 dependent = 'MORT_IND'
 final_set %>%
   missing_pattern(dependent,explanatory)
@@ -203,6 +231,16 @@ final_set %>%
 ```
 
 
+```{r}
+final_set<-final_set %>%
+  replace_na(list(RILUZ_DUR=0))
+
+final_set %>%
+  missing_pattern(dependent,explanatory)
+```
+
+
+
 ### Data Transformation
 
 #### One-hot encoding 
@@ -211,23 +249,38 @@ final_set %>%
 # "spread" function for quick table pivoting
 ##=====================================================
 race_ohe<-final_set %>% 
-  dplyr::select(PATID,RACE) %>%
+  select(PATID,RACE) %>%
   mutate(ind=1) %>%
   spread(RACE,ind, fill = 0)
 
 head(race_ohe)
 ```
 
-Let's replace the categorical "RACE" column by the numerical representation based on one-hot-encoding
 ```{r}
+##=====================================================
+# "rename" function for modifying column names
+##=====================================================
+race_ohe<-race_ohe %>%
+  rename("RACE_white" = "03",
+         "RACE_black" = "05",
+         "RACE_OT" = "OT",
+         "RACE_UN" = "UN"
+         )
 
+head(race_ohe)
+```
+
+Let's replace the categorical "RACE" column by the numerical representation based on one-hot-encoding
+
+```{r}
 final_set<-final_set %>%
   left_join(race_ohe,by="PATID") %>%
   select(-RACE)
 
+head(final_set)
 ```
 
 
 ```{r}
-saveRDS(final_set,file="pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")")
+saveRDS(final_set,file="C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
 ```

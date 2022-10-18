@@ -11,7 +11,7 @@ Preparation: report setup, load packages, load data
 #set up rmd 
 knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
 pacman::p_load(tidyverse,knitr,kableExtra)
-pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/als_pt_table.rda")
+pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
 ```
 
 
@@ -30,23 +30,13 @@ The primary aim of EDA is to:
 
 ### Categorical Data/Variables 
 
-For better demonstration, let's first add back the column `bmi_classify` which discretize BMI into 4 categories:
-
-```{r bmi_classify}
-idd_bmi<-idd_bmi %>%
-  mutate(bmi_classify=case_when(bmi_median<18.5 ~ '1.underweight',
-                                bmi_median>=18.5&bmi_median < 25 ~ "2.normal",
-                                bmi_median>=25&bmi_median<30 ~ "3.overweight",
-                                bmi_median>=30 ~ "4.obese"))
-```
-
 #### Univariate EDA
 
 ##### Non-Graphical Methods
 
 *Tabulation, or Frequency table*
     
-```{r tbl_bmi}
+```{r}
 ##==============================================
 # use "table","prop.table" function 
 # for quick check
