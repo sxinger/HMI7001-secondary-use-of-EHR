@@ -52,13 +52,19 @@ pt_tbl_add_agegrp<-pt_tbl %>%
                              AGE_AT_ALS1DX>=80~'Group5'))
 #print first 6 rows
 head(pt_tbl_add_agegrp)
-
-#plot out the age group
-ggplot(pt_tbl_add_agegrp,aes(x=age_group))+
-  geom_bar(stat="count")
 ```
 
+```{r}
+##==============================================
+# "select" function for subsetting columns
+# you can exclude columns by adding a "-" sign
+##==============================================
+pt_tbl_only_agegrp<-pt_tbl_add_agegrp %>%
+  select(PATID,age_group)
 
+ggplot(pt_tbl_only_agegrp,aes(x=age_group))+
+  geom_bar(stat="count")
+```
 
 **********************************                     
 
@@ -134,7 +140,7 @@ Let's form a simple analytic dataset with:
 2. layout to look like: 
 
 |PATID|SEX|RACE|AGE_AT_ALS1DX|RILUZ_DUR|RILUZ_IND|DAYS_ALS1DX_TO_DEATH|DAYS_ALS1DX_TO_CENSOR|MORT_IND |MORT_1YR |
-|1234 |M  |05  |70           |300      |1        |NA                  |200                |0        |0        |
+|1234 |M  |05  |70           |300      |1        |NA                  |200                  |0        |0        |
 
 ```{r}
 ##========================================================
@@ -162,6 +168,10 @@ final_set<-pt_tbl %>%
 #### Data Cleaning - Missing Data 
 
 ```{r}
+##=====================================================
+# "str" function is a handy function for quick check of
+# data.frame structure 
+##=====================================================
 str(final_set)
 ```
 
@@ -178,7 +188,6 @@ dependent = 'MORT_IND'
 final_set %>%
   missing_pattern(dependent,explanatory)
 ```
-
 
 
 ```{r}
@@ -198,10 +207,27 @@ final_set %>%
 
 #### One-hot encoding 
 ```{r}
+##=====================================================
+# "spread" function for quick table pivoting
+##=====================================================
 race_ohe<-final_set %>% 
   dplyr::select(PATID,RACE) %>%
   mutate(ind=1) %>%
   spread(RACE,ind, fill = 0)
 
 head(race_ohe)
+```
+
+Let's replace the categorical "RACE" column by the numerical representation based on one-hot-encoding
+```{r}
+
+final_set<-final_set %>%
+  left_join(race_ohe,by="PATID") %>%
+  select(-RACE)
+
+```
+
+
+```{r}
+saveRDS(final_set,file="pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")")
 ```

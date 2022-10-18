@@ -29,16 +29,18 @@ Use `DBI:dbConnect` and `odbc::odbc()` function with stored credentials to make 
 ```{r db_connection}
 # you can directly put your credential in the function
 # myconn <- DBI::dbConnect(drv = odbc::odbc(),
-#                          dsn = Sys.getenv("XXXXXX"),
-#                          uid = Sys.getenv("XXXXXXX"),
-#                          pwd = Sys.getenv("XXXXXXXX"))
+#                          dsn = "XXXX",
+#                          uid = "", # leave the user_id empty if using Shibboleth (as you will be prompted to the university log-in portal)
+#                          pwd = ""  # leave the password empty if using Shibboleth (as you will be prompted to the university log-in portal)
+#                          ) 
 
 # or just in case you may accidentally copy out your credentials out together with your R codes
 # you can save the credentials as an environment parameter and call it using an alias
 myconn <- DBI::dbConnect(drv = odbc::odbc(),
                          dsn = Sys.getenv("ODBC_DSN_NAME"),
-                         uid = Sys.getenv("SNOWFLAKE_USER"),
-                         pwd = Sys.getenv("SNOWFLAKE_PWD"))
+                         uid = Sys.getenv("SNOWFLAKE_USER"), # you may also leave the user_id empty if using Shibboleth
+                         pwd = Sys.getenv("SNOWFLAKE_PWD")   # you may also leave the password empty if using Shibboleth
+                         )
 ```
 
 # Load data in using R function by embedding SQL codes

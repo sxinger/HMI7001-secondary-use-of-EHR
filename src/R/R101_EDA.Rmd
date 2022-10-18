@@ -1,0 +1,260 @@
+---
+title: "Exploratory Data Analysis "
+author: "Xing Song"
+date: "10/18/2022"
+output: html_document
+---
+
+Preparation: report setup, load packages, load data
+
+```{r setup}
+#set up rmd 
+knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
+pacman::p_load(tidyverse,knitr,kableExtra)
+pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/als_pt_table.rda")
+```
+
+
+**************************************************************************************************
+
+## Exploratory Data Analysis (EDA)
+
+The primary aim of EDA is to:
+
+* **Maximize insight** into the database/understand the database structure
+* **Visualize potential relationships** (direction and magnitude) between exposure and outcome variables
+* **Detect outliers and anomalies** (values that are significantly different from the other observations)
+* **Extract and create clinically** relevant variables.
+
+**************************************************************************************************
+
+### Categorical Data/Variables 
+
+For better demonstration, let's first add back the column `bmi_classify` which discretize BMI into 4 categories:
+
+```{r bmi_classify}
+idd_bmi<-idd_bmi %>%
+  mutate(bmi_classify=case_when(bmi_median<18.5 ~ '1.underweight',
+                                bmi_median>=18.5&bmi_median < 25 ~ "2.normal",
+                                bmi_median>=25&bmi_median<30 ~ "3.overweight",
+                                bmi_median>=30 ~ "4.obese"))
+```
+
+#### Univariate EDA
+
+##### Non-Graphical Methods
+
+*Tabulation, or Frequency table*
+    
+```{r tbl_bmi}
+##==============================================
+# use "table","prop.table" function 
+# for quick check
+##==============================================
+table(idd_bmi$DIAGNOSIS,dnn=list("freq"))
+prop.table(table(idd_bmi$DIAGNOSIS,dnn=list("rel_freq")))
+
+##==============================================
+# use "kable" function for nicer print-out
+##==============================================
+uni_freq_tbl<- idd_bmi %>%
+  group_by(DIAGNOSIS) %>%
+  summarise(freq=n()) %>% 
+  ungroup %>%
+  mutate(rel_freq=round(freq/1373,4))
+
+kable(stack_tbl,
+      col.names = c("IDD DX","Frequency","Relative Frequency(%)"),
+      caption="Frequency Table of IDD Diagnosis")
+```
+
+
+#### Graphical Methods
+
+*Barplot*
+
+```{r race_barplot}
+# example for nominal data
+ggplot(data=idd_bmi,aes(x=DIAGNOSIS)) +
+  geom_bar()
+
+# example for ordinal data
+ggplot(data=idd_bmi,aes(x=bmi_classify)) +
+  geom_bar()
+```
+
+
+*Pie chart*
+  
+```{r race_pie}
+ggplot(idd_bmi %>% group_by(DIAGNOSIS) %>%
+         dplyr::summarize(freq=n()) %>% ungroup, 
+       aes(x="",y=freq,fill=DIAGNOSIS)) +
+  geom_bar(width=1,stat="identity")+
+  coord_polar("y", start=0)+
+  labs(x="",y="")
+```
+
+*************************************************************************************
+
+#### Multivariate EDA
+
+##### Non-Graphical Method
+
+*Cross tabulation, or Contingency table, or Frequency table*
+    
+```{r tbl_dx_bmi}
+bivar_freq_tbl<-table(idd_bmi$bmi_classify,idd_bmi$DIAGNOSIS,
+      dnn=list("BMI","DIASNOSIS"))
+
+bivar_freq_tbl
+```
+
+##### Graphical Method
+
+*Conditional Barplot*
+
+```{r cond_bar}
+ggplot(data=idd_bmi,aes(x=DIAGNOSIS,fill=bmi_classify)) +
+  geom_bar(position="dodge")
+```
+
+*Heatmap*
+
+```{r heat_race_dx}
+ggplot(idd_bmi %>% group_by(DIAGNOSIS,bmi_classify) %>%
+         dplyr::summarize(freq=n()) %>% ungroup, 
+       aes(x=bmi_classify,y=DIAGNOSIS,fill=freq))+
+  geom_tile(colour = "white") + 
+  scale_fill_gradient(low = "lightblue",high = "steelblue") + 
+  theme_classic()
+
+```
+
+**************************************************************************************************
+
+### Numerical Data/Variables
+
+#### Univariate EDA
+
+##### Non-Graphical Method
+
+*Descriptive Statistics*
+    
+a) Central Tendency: mean, median, mode
+        
+```{r bmi_center}
+#mean
+mean(idd_bmi$bmi_median)
+#median
+median(idd_bmi$bmi_median)
+#mode
+idd_bmi %>% 
+  group_by(RACE) %>% 
+  summarise(n=n()) %>% 
+  slice(which.max(n))
+```
+
+b) Spread: min, max, variance, standard deviation (sd), interquartile range (IQR)
+        
+```{r bmi_sprerad}
+#range
+max(idd_bmi$bmi_median)-min(idd_bmi$bmi_median)
+
+#variance
+var(idd_bmi$bmi_median)
+
+#sd
+sd(idd_bmi$bmi_median)
+
+#IQR
+IQR(idd_bmi$bmi_median)
+
+#5-number summary
+summary(idd_bmi$bmi_median)
+```
+
+c) Shape: skewness (normal distribution is near 0), kurtosis (normal distribution is around 3)
+
+
+##### Graphical Method
+
+*Histogram, Density plot*
+    
+```{r bmi_hist}
+#histogram
+ggplot(idd_bmi,aes(bmi_median))+
+  geom_histogram(bins = 30)
+
+#density plot
+ggplot(idd_bmi,aes(bmi_median))+
+  geom_density(bins = 30)
+```
+
+*Boxplot*
+```{r boxplot}
+#vertical
+ggplot(idd_bmi,aes(y=bmi_median))+
+  geom_boxplot(bins = 30)
+
+#horizontal
+ggplot(idd_bmi,aes(x=bmi_median))+
+  geom_boxplot(bins = 30)
+```
+
+
+#### Multivariate EDA
+
+##### Non-Graphical Method
+
+*Pearson Correlation*
+        
+* The closer it is to 1, the more linearly related
+* positive sign suggests positive correlation
+          
+```{r cor_bmi_age}
+cor(idd_bmi$bmi_median,idd_bmi$AGE_AT_FIRSTDX,method="pearson")
+```
+
+*Spearman Correlation*
+```{r cor_bmi_age}
+cor(idd_bmi$bmi_median,idd_bmi$AGE_AT_FIRSTDX,method="spearman")
+```
+
+
+##### Graphical Method
+
+*Scatter Plot*
+
+```{r age_bmi}
+ggplot(idd_bmi %>% filter(!is.na(AGE_AT_FIRSTDX)&bmi_median<50&AGE_AT_FIRSTDX>=18),
+       aes(x=AGE_AT_FIRSTDX,y=bmi_median))+
+  geom_point()+
+  geom_smooth(method="loess")
+```
+
+
+#### Mixture Data
+
+##### Non-Graphical Method
+
+*ANOVA*
+
+```{r anova_bmi_dx}
+fit_aov<-aov(bmi_median ~ DIAGNOSIS, data=idd_bmi)
+summary(fit_aov)
+```
+
+##### Graphical Method
+
+*Conditional Boxplot*
+
+```{r bmi_boxplot}
+#vertical boxplot
+ggplot(idd_bmi,aes(y=bmi_median,fill=DIAGNOSIS))+
+  geom_boxplot()
+```
+
+
+*************************************************************
+
