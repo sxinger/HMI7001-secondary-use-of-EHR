@@ -29,7 +29,14 @@ The primary aim of EDA is to:
 **************************************************************************************************
 
 ### Categorical Data/Variables 
-
+```{r}
+aset<-aset %>%
+  mutate(AGEGRP=case_when(AGE_AT_ALS1DX<65~'AgeGrp1',
+                          AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'AgeGrp2',
+                          AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'AgeGrp3',
+                          AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'AgeGrp4',
+                          AGE_AT_ALS1DX>=80~'AgeGrp5'))
+```
 #### Univariate EDA
 
 ##### Non-Graphical Methods
@@ -42,20 +49,20 @@ The primary aim of EDA is to:
 # for quick check
 ##==============================================
 table(aset$RACE,dnn=list("freq"))
-prop.table(table(aset$AGE_AT_ALS1DX,dnn=list("rel_freq")))
+prop.table(table(aset$RACE,dnn=list("rel_freq")))
 
 ##==============================================
 # use "kable" function for nicer print-out
 ##==============================================
 uni_freq_tbl<- aset %>%
-  group_by(AGE_AT_ALS1DX) %>%
+  group_by(RACE) %>%
   summarise(freq=n()) %>% 
   ungroup %>%
   mutate(rel_freq=round(freq/1373,4))
 
 kable(stack_tbl,
-      col.names = c("AGE_AT_ALS1DX","Frequency","Relative Frequency(%)"),
-      caption="Frequency Table of different ")
+      col.names = c("RACE","Frequency","Relative Frequency(%)"),
+      caption="Frequency Table of Racial Groups")
 ```
 
 
@@ -63,23 +70,23 @@ kable(stack_tbl,
 
 *Barplot*
 
-```{r race_barplot}
+```{r}
 # example for nominal data
-ggplot(data=idd_bmi,aes(x=DIAGNOSIS)) +
+ggplot(data=aset,aes(x=RACE)) +
   geom_bar()
 
 # example for ordinal data
-ggplot(data=idd_bmi,aes(x=bmi_classify)) +
+ggplot(data=aset,aes(x=AGEGRP)) +
   geom_bar()
 ```
 
 
 *Pie chart*
   
-```{r race_pie}
-ggplot(idd_bmi %>% group_by(DIAGNOSIS) %>%
+```{r}
+ggplot(aset %>% group_by(RACE) %>%
          dplyr::summarize(freq=n()) %>% ungroup, 
-       aes(x="",y=freq,fill=DIAGNOSIS)) +
+       aes(x="",y=freq,fill=RACE)) +
   geom_bar(width=1,stat="identity")+
   coord_polar("y", start=0)+
   labs(x="",y="")
@@ -93,9 +100,9 @@ ggplot(idd_bmi %>% group_by(DIAGNOSIS) %>%
 
 *Cross tabulation, or Contingency table, or Frequency table*
     
-```{r tbl_dx_bmi}
-bivar_freq_tbl<-table(idd_bmi$bmi_classify,idd_bmi$DIAGNOSIS,
-      dnn=list("BMI","DIASNOSIS"))
+```{r}
+bivar_freq_tbl<-table(aset$RACE,aset$AGEGRP,
+      dnn=list("RACE","AGEGRP"))
 
 bivar_freq_tbl
 ```
@@ -104,17 +111,17 @@ bivar_freq_tbl
 
 *Conditional Barplot*
 
-```{r cond_bar}
-ggplot(data=idd_bmi,aes(x=DIAGNOSIS,fill=bmi_classify)) +
+```{r}
+ggplot(data=aset,aes(x=RACE,fill=AGEGRP)) +
   geom_bar(position="dodge")
 ```
 
 *Heatmap*
 
 ```{r heat_race_dx}
-ggplot(idd_bmi %>% group_by(DIAGNOSIS,bmi_classify) %>%
+ggplot(aset %>% group_by(RACE,AGEGRP) %>%
          dplyr::summarize(freq=n()) %>% ungroup, 
-       aes(x=bmi_classify,y=DIAGNOSIS,fill=freq))+
+       aes(x=AGEGRP,y=RACE,fill=freq))+
   geom_tile(colour = "white") + 
   scale_fill_gradient(low = "lightblue",high = "steelblue") + 
   theme_classic()
@@ -133,13 +140,13 @@ ggplot(idd_bmi %>% group_by(DIAGNOSIS,bmi_classify) %>%
     
 a) Central Tendency: mean, median, mode
         
-```{r bmi_center}
+```{r}
 #mean
-mean(idd_bmi$bmi_median)
+mean(aset$AGE_AT_ALS1DX)
 #median
-median(idd_bmi$bmi_median)
+median(aset$AGE_AT_ALS1DX)
 #mode
-idd_bmi %>% 
+aset %>% 
   group_by(RACE) %>% 
   summarise(n=n()) %>% 
   slice(which.max(n))
@@ -147,21 +154,21 @@ idd_bmi %>%
 
 b) Spread: min, max, variance, standard deviation (sd), interquartile range (IQR)
         
-```{r bmi_sprerad}
+```{r}
 #range
-max(idd_bmi$bmi_median)-min(idd_bmi$bmi_median)
+max(aset$AGE_AT_ALS1DX)-min(aset$AGE_AT_ALS1DX)
 
 #variance
-var(idd_bmi$bmi_median)
+var(aset$AGE_AT_ALS1DX)
 
 #sd
-sd(idd_bmi$bmi_median)
+sd(aset$AGE_AT_ALS1DX)
 
 #IQR
-IQR(idd_bmi$bmi_median)
+IQR(aset$AGE_AT_ALS1DX)
 
 #5-number summary
-summary(idd_bmi$bmi_median)
+summary(aset$AGE_AT_ALS1DX)
 ```
 
 c) Shape: skewness (normal distribution is near 0), kurtosis (normal distribution is around 3)
@@ -171,24 +178,24 @@ c) Shape: skewness (normal distribution is near 0), kurtosis (normal distributio
 
 *Histogram, Density plot*
     
-```{r bmi_hist}
+```{r}
 #histogram
-ggplot(idd_bmi,aes(bmi_median))+
+ggplot(aset,aes(AGE_AT_ALS1DX))+
   geom_histogram(bins = 30)
 
 #density plot
-ggplot(idd_bmi,aes(bmi_median))+
+ggplot(aset,aes(AGE_AT_ALS1DX))+
   geom_density(bins = 30)
 ```
 
 *Boxplot*
-```{r boxplot}
+```{r}
 #vertical
-ggplot(idd_bmi,aes(y=bmi_median))+
+ggplot(aset,aes(y=AGE_AT_ALS1DX))+
   geom_boxplot(bins = 30)
 
 #horizontal
-ggplot(idd_bmi,aes(x=bmi_median))+
+ggplot(aset,aes(x=AGE_AT_ALS1DX))+
   geom_boxplot(bins = 30)
 ```
 
@@ -202,13 +209,13 @@ ggplot(idd_bmi,aes(x=bmi_median))+
 * The closer it is to 1, the more linearly related
 * positive sign suggests positive correlation
           
-```{r cor_bmi_age}
-cor(idd_bmi$bmi_median,idd_bmi$AGE_AT_FIRSTDX,method="pearson")
+```{r}
+cor(aset$AGE_AT_ALS1DX,aset$DAYS_ALS1DX_TO_DEATH,method="pearson")
 ```
 
 *Spearman Correlation*
-```{r cor_bmi_age}
-cor(idd_bmi$bmi_median,idd_bmi$AGE_AT_FIRSTDX,method="spearman")
+```{r}
+cor(aset$AGE_AT_ALS1DX,aset$DAYS_ALS1DX_TO_DEATH,method="spearman")
 ```
 
 
@@ -216,9 +223,8 @@ cor(idd_bmi$bmi_median,idd_bmi$AGE_AT_FIRSTDX,method="spearman")
 
 *Scatter Plot*
 
-```{r age_bmi}
-ggplot(idd_bmi %>% filter(!is.na(AGE_AT_FIRSTDX)&bmi_median<50&AGE_AT_FIRSTDX>=18),
-       aes(x=AGE_AT_FIRSTDX,y=bmi_median))+
+```{r}
+ggplot(aset, aes(x=DAYS_ALS1DX_TO_DEATH,y=AGE_AT_ALS1DX))+
   geom_point()+
   geom_smooth(method="loess")
 ```
@@ -230,8 +236,8 @@ ggplot(idd_bmi %>% filter(!is.na(AGE_AT_FIRSTDX)&bmi_median<50&AGE_AT_FIRSTDX>=1
 
 *ANOVA*
 
-```{r anova_bmi_dx}
-fit_aov<-aov(bmi_median ~ DIAGNOSIS, data=idd_bmi)
+```{r}
+fit_aov<-aov(AGE_AT_ALS1DX ~ RACE, data=aset)
 summary(fit_aov)
 ```
 
@@ -241,7 +247,7 @@ summary(fit_aov)
 
 ```{r bmi_boxplot}
 #vertical boxplot
-ggplot(idd_bmi,aes(y=bmi_median,fill=DIAGNOSIS))+
+ggplot(aset,aes(y=AGE_AT_ALS1DX,fill=RACE))+
   geom_boxplot()
 ```
 
