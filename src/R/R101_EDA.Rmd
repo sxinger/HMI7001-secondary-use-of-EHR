@@ -41,7 +41,7 @@ The primary aim of EDA is to:
 # use "table","prop.table" function 
 # for quick check
 ##==============================================
-table(aset$AGE_AT_ALS1DX,dnn=list("freq"))
+table(aset$RACE,dnn=list("freq"))
 prop.table(table(aset$AGE_AT_ALS1DX,dnn=list("rel_freq")))
 
 ##==============================================

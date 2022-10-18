@@ -270,7 +270,7 @@ race_ohe<-race_ohe %>%
 head(race_ohe)
 ```
 
-Let's add the numerical representations of one-hot encoded RACE columns
+Let's add the numerical representations of one-hot encoded RACE columns, and form the final analytic set:
 
 ```{r}
 final_set<-final_set %>%
