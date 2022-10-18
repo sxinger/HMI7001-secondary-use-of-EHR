@@ -11,7 +11,7 @@ Preparation: report setup, load packages, load data
 #set up rmd 
 knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
 pacman::p_load(tidyverse,knitr,kableExtra)
-pt_tbl<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
+aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
 ```
 
 
@@ -41,21 +41,21 @@ The primary aim of EDA is to:
 # use "table","prop.table" function 
 # for quick check
 ##==============================================
-table(idd_bmi$DIAGNOSIS,dnn=list("freq"))
-prop.table(table(idd_bmi$DIAGNOSIS,dnn=list("rel_freq")))
+table(aset$AGE_AT_ALS1DX,dnn=list("freq"))
+prop.table(table(aset$AGE_AT_ALS1DX,dnn=list("rel_freq")))
 
 ##==============================================
 # use "kable" function for nicer print-out
 ##==============================================
-uni_freq_tbl<- idd_bmi %>%
-  group_by(DIAGNOSIS) %>%
+uni_freq_tbl<- aset %>%
+  group_by(AGE_AT_ALS1DX) %>%
   summarise(freq=n()) %>% 
   ungroup %>%
   mutate(rel_freq=round(freq/1373,4))
 
 kable(stack_tbl,
-      col.names = c("IDD DX","Frequency","Relative Frequency(%)"),
-      caption="Frequency Table of IDD Diagnosis")
+      col.names = c("AGE_AT_ALS1DX","Frequency","Relative Frequency(%)"),
+      caption="Frequency Table of different ")
 ```
 
 

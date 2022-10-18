@@ -45,11 +45,11 @@ ggplot(pt_tbl,aes(x=RACE))+
 ##==============================================
 #add a new column, "age_group", that groups ages into 5 groups
 pt_tbl_add_agegrp<-pt_tbl %>%
-  mutate(age_group=case_when(AGE_AT_ALS1DX<65~'AgeGrp1',
-                             AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'AgeGrp2',
-                             AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'AgeGrp3',
-                             AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'AgeGrp4',
-                             AGE_AT_ALS1DX>=80~'AgeGrp5'))
+  mutate(AGEGRP=case_when(AGE_AT_ALS1DX<65~'AgeGrp1',
+                          AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'AgeGrp2',
+                          AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'AgeGrp3',
+                          AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'AgeGrp4',
+                          AGE_AT_ALS1DX>=80~'AgeGrp5'))
 #print first 6 rows
 head(pt_tbl_add_agegrp)
 ```
@@ -60,9 +60,9 @@ head(pt_tbl_add_agegrp)
 # you can exclude columns by adding a "-" sign
 ##==============================================
 pt_tbl_only_agegrp<-pt_tbl_add_agegrp %>%
-  select(PATID,age_group)
+  select(PATID,AGEGRP)
 
-ggplot(pt_tbl_only_agegrp,aes(x=age_group))+
+ggplot(pt_tbl_only_agegrp,aes(x=AGEGRP))+
   geom_bar(stat="count")
 ```
 
@@ -270,12 +270,11 @@ race_ohe<-race_ohe %>%
 head(race_ohe)
 ```
 
-Let's replace the categorical "RACE" column by the numerical representation based on one-hot-encoding
+Let's add the numerical representations of one-hot encoded RACE columns
 
 ```{r}
 final_set<-final_set %>%
-  left_join(race_ohe,by="PATID") %>%
-  select(-RACE)
+  left_join(race_ohe,by="PATID")
 
 head(final_set)
 ```
