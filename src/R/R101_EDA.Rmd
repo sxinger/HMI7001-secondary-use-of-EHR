@@ -210,12 +210,12 @@ ggplot(aset,aes(x=AGE_AT_ALS1DX))+
 * positive sign suggests positive correlation
           
 ```{r}
-cor(aset$AGE_AT_ALS1DX,aset$DAYS_ALS1DX_TO_DEATH,method="pearson")
+cor(aset$AGE_AT_ALS1DX,aset$RILUZ_DUR,method="pearson")
 ```
 
 *Spearman Correlation*
 ```{r}
-cor(aset$AGE_AT_ALS1DX,aset$DAYS_ALS1DX_TO_DEATH,method="spearman")
+cor(aset$AGE_AT_ALS1DX,aset$RILUZ_DUR,method="spearman")
 ```
 
 
@@ -224,7 +224,7 @@ cor(aset$AGE_AT_ALS1DX,aset$DAYS_ALS1DX_TO_DEATH,method="spearman")
 *Scatter Plot*
 
 ```{r}
-ggplot(aset, aes(x=DAYS_ALS1DX_TO_DEATH,y=AGE_AT_ALS1DX))+
+ggplot(aset, aes(x=AGE_AT_ALS1DX,y=RILUZ_DUR))+
   geom_point()+
   geom_smooth(method="loess")
 ```
@@ -237,7 +237,7 @@ ggplot(aset, aes(x=DAYS_ALS1DX_TO_DEATH,y=AGE_AT_ALS1DX))+
 *ANOVA*
 
 ```{r}
-fit_aov<-aov(AGE_AT_ALS1DX ~ RACE, data=aset)
+fit_aov<-aov(RILUZ_DUR ~ RACE, data=aset)
 summary(fit_aov)
 ```
 
@@ -247,7 +247,7 @@ summary(fit_aov)
 
 ```{r bmi_boxplot}
 #vertical boxplot
-ggplot(aset,aes(y=AGE_AT_ALS1DX,fill=RACE))+
+ggplot(aset,aes(y=RILUZ_DUR,fill=RACE))+
   geom_boxplot()
 ```
 
