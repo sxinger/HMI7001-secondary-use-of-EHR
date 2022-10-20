@@ -199,8 +199,6 @@ final_set %>%
   ungroup
 ```
 
-
-
 #### Data Cleaning - Missing Data 
 
 ```{r}
@@ -230,7 +228,6 @@ final_set %>%
   missing_pattern(dependent,explanatory)
 ```
 
-
 ```{r}
 final_set<-final_set %>%
   replace_na(list(RILUZ_DUR=0))
@@ -238,8 +235,6 @@ final_set<-final_set %>%
 final_set %>%
   missing_pattern(dependent,explanatory)
 ```
-
-
 
 ### Data Transformation
 
