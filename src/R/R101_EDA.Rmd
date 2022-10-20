@@ -10,7 +10,8 @@ Preparation: report setup, load packages, load data
 ```{r setup}
 #set up rmd 
 knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse,
+               kableExtra)
 aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
 ```
 
@@ -52,7 +53,10 @@ head(aset)
 ##==============================================
 table(aset$RACE,dnn=list("freq"))
 prop.table(table(aset$RACE,dnn=list("rel_freq")))
+```
 
+
+```{r}
 ##==============================================
 # use "kable" function for nicer print-out
 ##==============================================
@@ -62,7 +66,7 @@ uni_freq_tbl<- aset %>%
   ungroup %>%
   mutate(rel_freq=round(freq/1373,4))
 
-kable(stack_tbl,
+kable(uni_freq_tbl,
       col.names = c("RACE","Frequency","Relative Frequency(%)"),
       caption="Frequency Table of Racial Groups")
 ```
@@ -76,7 +80,10 @@ kable(stack_tbl,
 # example for nominal data
 ggplot(data=aset,aes(x=RACE)) +
   geom_bar()
+```
 
+
+```{r}
 # example for ordinal data
 ggplot(data=aset,aes(x=AGEGRP)) +
   geom_bar()
@@ -94,6 +101,7 @@ ggplot(aset %>% group_by(RACE) %>%
   labs(x="",y="")
 ```
 
+
 *************************************************************************************
 
 #### Multivariate EDA
@@ -108,6 +116,21 @@ bivar_freq_tbl<-table(aset$RACE,aset$AGEGRP,
 
 bivar_freq_tbl
 ```
+
+```{r}
+prop.table(bivar_freq_tbl)
+```
+
+```{r}
+# row proportions
+prop.table(bivar_freq_tbl,margin=1)
+```
+
+```{r}
+# column proportions
+prop.table(bivar_freq_tbl,margin=2)
+```
+
 
 ##### Graphical Method
 
@@ -174,7 +197,16 @@ summary(aset$AGE_AT_ALS1DX)
 ```
 
 c) Shape: skewness (normal distribution is near 0), kurtosis (normal distribution is around 3)
+```{r}
+pacman::p_load("moments")
 
+# skewness
+skewness(aset$AGE_AT_ALS1DX)
+
+# kurtosis
+kurtosis(aset$AGE_AT_ALS1DX)
+
+```
 
 ##### Graphical Method
 
@@ -228,7 +260,7 @@ cor(aset$AGE_AT_ALS1DX,aset$RILUZ_DUR,method="spearman")
 ```{r}
 ggplot(aset, aes(x=AGE_AT_ALS1DX,y=RILUZ_DUR))+
   geom_point()+
-  geom_smooth(method="loess")
+  geom_smooth(method="loess",formula='y ~ x')
 ```
 
 
@@ -239,7 +271,7 @@ ggplot(aset, aes(x=AGE_AT_ALS1DX,y=RILUZ_DUR))+
 *ANOVA*
 
 ```{r}
-fit_aov<-aov(RILUZ_DUR ~ RACE, data=aset)
+fit_aov<-aov(AGE_AT_ALS1DX ~ SEX, data=aset)
 summary(fit_aov)
 ```
 
@@ -249,6 +281,6 @@ summary(fit_aov)
 
 ```{r bmi_boxplot}
 #vertical boxplot
-ggplot(aset,aes(y=RILUZ_DUR,fill=RACE))+
+ggplot(aset,aes(y=AGE_AT_ALS1DX,fill=SEX))+
   geom_boxplot()
 ```
