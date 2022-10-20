@@ -292,6 +292,8 @@ from
        as p(incidence_rate_w,incidence_rate_nw,incidence_rate_un)
 ;
 
+-- INCIDENCE_RATE_W	INCIDENCE_RATE_NW	INCIDENCE_RATE_UN	RISK_RATIO_BY_RACE
+-- 0.513021	0.380952	0.666667	1.346681471681
 
 -- f. What is the risk ratio/relative risk of mortality between patients with age at first ALS diagnosis <65 and ≥ 65 years old? 
 create or replace table als_age_grp as

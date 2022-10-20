@@ -1,5 +1,5 @@
 ---
-title: "Exploratory Data Analysis "
+title: "Confirmatory Data Analysis "
 author: "Xing Song"
 date: "10/18/2022"
 output: html_document
@@ -35,7 +35,7 @@ aset<-aset %>%
                           AGE_AT_ALS1DX>=65&AGE_AT_ALS1DX<70~'AgeGrp2',
                           AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'AgeGrp3',
                           AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'AgeGrp4',
-                          TRUE ~'AgeGrp5'))
+                          AGE_AT_ALS1DX>=80~'AgeGrp5'))
 ```
 #### Univariate EDA
 
