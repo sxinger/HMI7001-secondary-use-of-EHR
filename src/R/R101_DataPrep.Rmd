@@ -72,14 +72,14 @@ ggplot(pt_tbl_only_agegrp,aes(x=AGEGRP))+
 
 **discrete data**
 
-```{r cont_dat}
+```{r}
 ggplot(pt_tbl,aes(x=AGE_AT_ALS1DX))+
   geom_histogram(fill="blue",bins = 40)
 ```
 
 **continuous data**
 
-```{r cont_dat}
+```{r}
 ggplot(pt_tbl,aes(x=AGE_AT_ALS1DX))+
   geom_density(fill="blue")
 
@@ -122,6 +122,11 @@ head(riluz_tbl_dur)
 riluz_tbl_dur<-riluz_tbl_dur %>%
   mutate(RILUZ_DUR = difftime(lubridate::ymd(riluz_end), lubridate::ymd(riluz_begin), units = "days")) %>%
   mutate(RILUZ_DUR = as.numeric(RILUZ_DUR) + 1)
+
+head(riluz_tbl_dur)
+
+riluz_tbl_dur %>%
+  filter(duplicated(PATID))
 ```
 
 
@@ -183,6 +188,8 @@ final_set %>%
   ungroup
 ```
 
+
+
 ```{r}
 ##========================================================
 # "group_by"+"filter" to de-duplicate
@@ -198,6 +205,8 @@ final_set %>%
   arrange(PATID) %>%
   ungroup
 ```
+
+
 
 #### Data Cleaning - Missing Data 
 
@@ -228,6 +237,7 @@ final_set %>%
   missing_pattern(dependent,explanatory)
 ```
 
+
 ```{r}
 final_set<-final_set %>%
   replace_na(list(RILUZ_DUR=0))
@@ -235,6 +245,8 @@ final_set<-final_set %>%
 final_set %>%
   missing_pattern(dependent,explanatory)
 ```
+
+
 
 ### Data Transformation
 

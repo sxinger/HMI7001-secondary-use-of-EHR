@@ -10,7 +10,7 @@ Preparation: report setup, load packages, load data
 ```{r setup}
 #set up rmd 
 knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
-pacman::p_load(tidyverse,knitr,kableExtra)
+pacman::p_load(tidyverse)
 aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
 ```
 
@@ -19,7 +19,7 @@ aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda"
 
 ## Exploratory Data Analysis (EDA)
 
-The primary aim of EDA is to:
+EDA:  refers to a set of procedures for producing descriptive and graphical summary of the data. The term is developed by John Tukey: “The best single device for suggesting, and at times answering questions beyond those originally posed is the graphical display”. The primary aim of EDA is to:
 
 * **Maximize insight** into the database/understand the database structure
 * **Visualize potential relationships** (direction and magnitude) between exposure and outcome variables
@@ -36,6 +36,8 @@ aset<-aset %>%
                           AGE_AT_ALS1DX>=70&AGE_AT_ALS1DX<75~'AgeGrp3',
                           AGE_AT_ALS1DX>=75&AGE_AT_ALS1DX<80~'AgeGrp4',
                           TRUE ~'AgeGrp5'))
+
+head(aset)
 ```
 #### Univariate EDA
 
@@ -250,7 +252,3 @@ summary(fit_aov)
 ggplot(aset,aes(y=RILUZ_DUR,fill=RACE))+
   geom_boxplot()
 ```
-
-
-*************************************************************
-
