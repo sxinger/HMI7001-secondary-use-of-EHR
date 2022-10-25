@@ -103,3 +103,9 @@ cor.test(aset$AGE_AT_ALS1DX,aset$RILUZ_DUR,method="pearson")
 ```{r}
 cor.test(aset$AGE_AT_ALS1DX,aset$RILUZ_DUR,method="spearman")
 ```
+
+*Kolmogorov-Smirnov Tests*
+
+```{r}
+ks.test(aset$AGE_AT_ALS1DX,aset$RILUZ_DUR)
+```
