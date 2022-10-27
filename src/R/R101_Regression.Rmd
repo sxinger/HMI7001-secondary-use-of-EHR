@@ -9,13 +9,13 @@ Let's do some preparation for the class by running the following chunk of codes
 
 ```{r setup}
 #set up rmd 
-knitr::opts_chunk$set(message=F,warning=F,fig.width=6, fig.height=3)
+knitr::opts_chunk$set(message=F,warning=F,fig.width=8, fig.height=5)
 
 #load packages
 pacman::p_load(tidyverse,pROC)
 
 #load data
-idd_bmi<-readRDS("./idd_bmi_final.rda")
+aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda")
 ```
 
 
@@ -24,32 +24,17 @@ idd_bmi<-readRDS("./idd_bmi_final.rda")
 Linear regression provides the foundation for many types of analyses we perform on health data. In the simplest scenario, we try to relate one continuous outcome, `y`, to a single continuous covariate, `x`, by trying to find values for `b0` and `b1` so that: 
 `y = b0 + b1*x`. 
 
-**Outcome vs. Covariate**
+> To estimate if `AGE_AT_ALS1DX` is associated with `RILUZ_DUR`; the younger you are, the more likely you will be exposed to Riluzole longer? 
 
-_Outcomes_: or response, or dependent variable, or target, or event
-
-_Covariate_: or grouping variable, or independent variables, or predictors, or explanatory variables, or exposure, or risk factor
+```{r}
+ggplot(aset, aes(x=AGE_AT_ALS1DX,y=RILUZ_DUR))+
+  geom_point()+
+  geom_smooth(method="loess",formula = 'y~x')
+```
 
 
 ```{r}
-# quick look at what we have in the analytical set
-str(idd_bmi)
-```
-
-recall the question from last class we were trying to answer:
-
-> To estimate if age_at_firstdx is associated with bmi among adult IDD patients
-
-
-```{r bmi_age_plot}
-ggplot(idd_bmi, aes(x=AGE_AT_FIRSTDX,y=bmi_median))+
-  geom_point()+
-  geom_smooth(method="loess")
-```
-
-
-```{r bmi_age_lm}
-fit1<-glm(bmi_median ~ AGE_AT_FIRSTDX, data=idd_bmi)
+fit1<-glm(RILUZ_DUR ~ AGE_AT_ALS1DX, data=aset)
 
 #model summary
 summary.lm(fit1)
@@ -64,22 +49,22 @@ confint(fit1)
 
 However, there are three assumptions for regression analysis which you need to check to validate the model results. It is always a good practice to perform **residual analysis** (or diagnositic plots) to visually check the following three assumptions:
 
-* Independence: residual vs. predictted plot, or actual vs. predictted plot
-* Homoscedasticity (equal variance): residual vs. preditted plot, or actual vs. predictted plot
+* Independence: residual vs. predicted plot, or actual vs. predicted plot
+* Homoscedasticity (equal variance): residual vs. preditted plot, or actual vs. predicted plot
 
 ```{r}
 # values needed for model diagnostics
-resid_dat<-data.frame(actual=fit1$data$bmi_median,
-                      predictted=fit1$fitted.values,
+resid_dat<-data.frame(actual=fit1$data$RILUZ_DUR,
+                      predicted=fit1$fitted.values,
                       residual=fit1$residuals)
 
-ggplot(data=resid_dat,aes(x=predictted,y=residual))+
+ggplot(data=resid_dat,aes(x=predicted,y=residual))+
   geom_point()+
-   geom_smooth(method="lm")
+   geom_smooth(method="lm",formula = 'y~x')
 
-ggplot(data=resid_dat,aes(x=predictted,y=actual))+
+ggplot(data=resid_dat,aes(x=predicted,y=actual))+
   geom_point()+
-   geom_smooth(method="lm")
+   geom_smooth(method="lm",formula = 'y~x')
 ```
 
 
@@ -93,6 +78,41 @@ ggplot(data=resid_dat,aes(sample=residual))+
 **Remark**: you may want to perform log transformation on both numerical outcome and covariate, so that the residuals would look more homoscedastic and normal. But you want to be cautious about how you interpret the resulting coefficient. 
 
 
+```{r}
+ggplot(aset %>% filter(RILUZ_DUR > 0), aes(x=AGE_AT_ALS1DX,y=RILUZ_DUR))+
+  geom_point()+
+  geom_smooth(method="loess",formula = 'y~x')
+```
+
+
+```{r}
+fit2<-glm(RILUZ_DUR ~ AGE_AT_ALS1DX, 
+          data=aset %>% filter(RILUZ_DUR > 0),
+          family = 'poisson')
+
+#model summary
+summary.lm(fit2)
+
+#confidence interval of coefficients
+confint(fit2)
+
+```
+
+```{r}
+exp(-0.03551)
+```
+
+
+```{r}
+resid_dat<-data.frame(actual=fit2$data$RILUZ_DUR,
+                      predicted=fit2$fitted.values,
+                      residual=fit2$residuals)
+
+ggplot(data=resid_dat,aes(x=predicted,y=residual))+
+  geom_point()+
+   geom_smooth(method="lm",formula = 'y~x')
+```
+
 
 *******************************************************************************************************************
 
@@ -103,19 +123,11 @@ ggplot(data=resid_dat,aes(sample=residual))+
 ```{r}
 # direct calculation of R-sq
 1-fit1$deviance/fit1$null.deviance
+1-fit2$deviance/fit1$null.deviance
 
 # R-sq is also part of the standard output of summary.lm()
-summary.lm(fit1)
+summary.lm(fit2)
 ```
-
-
-*******************************************************************************************************************
-
-**Model Interpretation, Conclusion, and Future Directions**
-
-* According to p-value (0.992) of coefficient for age, we conclude that there is no statistical significant association between age at IDD onset and bmi among IDD patients (Autism or Downs) based on the provided data.
-
-* R-square (<0.1%) suggests that the model is far away from being sufficient. We need to include more variables to understand the variation of BMI among IDD patients
 
 
 
@@ -127,136 +139,68 @@ summary.lm(fit1)
 
 Now, let's look at another question or interest: 
 
-> To estimate if bmi is a risk factor for developing obstructive sleep apnea (OSA) among adult IDD patients
-
-#### Contigency Table
-
-```{r bmi_sa_tbl}
-idd_bmi %<>%
-  mutate(bmi_classify = case_when(bmi_median < 18.5 ~ 'under',
-                                  bmi_median < 25 ~ 'normal',
-                                  bmi_median < 30 ~ 'over',
-                                  bmi_median >= 30 ~ 'obese'),
-         bmi_overwt_ind = case_when(bmi_median > 25 ~ 1,
-                                    TRUE ~ 0))
-
-tbl<-table(idd_bmi$bmi_overwt_ind,idd_bmi$OSA_ind,
-           dnn = list("Obese","OSA"))
+> To estimate if there is an association between `AGE_AT_ALS1DX` and `MORT_1YR`
 
 
-tbl
-```
-
-************************************************************************************************************************
-
-#### Odds and Odds Ratio
-
-Based on the contingency table (frequency table), we can get the odds of an outcome  (i.e. having OSA, or OSA_ind = 1) for the non-exposure group (i.e. non-overweight IDD patients) as:
-
-```{r non_ow_bmi}
-non_ow<-idd_bmi %>% filter(bmi_overwt_ind==0)
-non_ow_p<-round(prop.table(table(non_ow$bmi_overwt_ind,non_ow$OSA_ind)),6)
-
-# probability of OSA event among non-overweight autism patients as
-non_ow_p
-
-# so, the odds is:
-odds_non_ow<-non_ow_p[2]/(1-non_ow_p[2])
-odds_non_ow
+```{r}
+aset %>%
+  filter(is.na(MORT_1YR) & is.na(DAYS_ALS1DX_TO_DEATH) & DAYS_ALS1DX_TO_CENSOR <= 365)
 ```
 
 
-And the odd of having OSA among exposure group (i.e. overweight IDD patients) as: 
-
-```{r ow_bmi}
-ow<-idd_bmi %>% filter(bmi_overwt_ind==1)
-ow_p<-round(prop.table(table(ow$bmi_overwt_ind,ow$OSA_ind)),6)
-
-# probability of SA event among overweight autism patients as
-ow_p
-
-# so, the odds is:
-odds_ow<-ow_p[2]/(1-ow_p[2])
-odds_ow
+```{r}
+aset2<-aset %>% 
+  filter(!(is.na(MORT_1YR) & is.na(DAYS_ALS1DX_TO_DEATH) & DAYS_ALS1DX_TO_CENSOR <= 365))
 ```
 
 
-When we take the ratios of both odds (odds of SA event among overweight/odds of SA event among non-overweight), we obtained the `odds ratio`
-
-```{r or}
-odds_ow/odds_non_ow
+```{r}
+ggplot(aset2, aes(x=AGE_AT_ALS1DX,y=MORT_1YR))+
+  geom_point()+
+  geom_smooth(method="loess",formula = 'y~x')
 ```
-
-An `odds ratio` that is significantly greater than (less than) 1 suggests an strong association between the outcome and the single covariate of interest
-
-
-************************************************************************************************************************
-
-#### Logistic Regression Model
-
-When the data type of outcome is **binary**, contingency tables can one of the fundamental ways to look at it. But, they are somewhat limited: 
-
-* What happens when the covariate of interest is continuous? We could of course create categories from the covariate by establishing cut points, but we may still miss some important aspect of the relationship between the covariate and the outcome by not choosing the right cut points.
-
-* What happens when we know that a nuisance covariate is related to both the outcome and the covariate of interest. This type of nuisance variable is called a confounder and occurs frequently in observational data
-
-Logistic regression is a way of addressing both of these issues, among many others. It follows some similar set up as the linear regression model, but there is a little problem. In linear regression, the range of the outcome ("y") can be any real number (normality assumption) and it may prone to estimate probabilties outside the range of [0,1]. This issue can be resolved by transforming the regression equation as `log(y/(1-y)) = b0 + b1*x` (note that `y` represents the probability of an event for certain covariate values of `x`)
 
 
 ```{r bmi_cat_sa_glm}
-fit2<-glm(OSA_ind ~ bmi_overwt_ind, data=idd_bmi, family=binomial())
-summary(fit2)
+fit3<-glm(MORT_1YR ~ AGE_AT_ALS1DX, 
+          data=aset2, 
+          family='binomial')
+summary(fit3)
 ```
-
-Let's take a closer look at the model and interpret the results. As you can see, the `Estimate` of `bmi_overwt_ind` (or b1, or coefficient) is 0.9067. By taking the exponential of the coefficient, we get exp(0.9067) = 2.476195 (corresponding to the Odds ratio we calculated above, 2.476195). 
-
-In addition, based on the `Estimate` of `(Intercept)` (or b0), we can also calculate the _odds of sleep apnea among non-overweight patient_ simply as: exp(b0) = exp(-4.0134) = 0.01807, which is corresponding to the `odds_non_ow` we calculated above.
-
-Then, based on both b0 and b1, we can also calculate the _odds of OSA among overweight patient_ as: exp(b0+b1) = exp(-4.0134 + 1.2524) = 0.0632, which is corresponding to the `odds_ow` we calculated above.
 
 
 *******************************************************************************************************************
 
 **Goodness of fit**
 
-* Predictions: in logistic regresion, the predictions are the _predictted probabilities_ of your target event (outcome). For example, in our model of sleep apnea and bmi, the prediction is the "predictted probability of an autism patient developing sleep apnea":
+* Predictions: in logistic regression, the predictions are the _predicted probabilities_ of your target event (outcome).
 
 ```{r pred}
 # values needed for model diagnostics
-resid_dat2<-data.frame(actual=fit2$data$OSA_ind,
-                       predictted=fit2$fitted.values,
-                       residual=fit2$residuals)
+resid_dat<-data.frame(actual=fit3$data$MORT_1YR,
+                       predicted=fit3$fitted.values,
+                       residual=fit3$residuals)
 
-table(resid_dat2$predictted)
+table(resid_dat$predicted)
 ```
 
-Let's create a rule to further classify the predictions: if predictted probability >= 0.16, then OSA_ind_hat = 1; otherwise, OSA_ind_hat = 0. Then, my final *confusion matrix* (or *error matrix*) will be: 
+Let's create a rule to further classify the predictions: if predicted probability >= 0.2, then MORT_1YR = 1; otherwise, MORT_1YR = 0. Then, my final *confusion matrix* (or *error matrix*) will be: 
 
 ```{r}
-resid_dat2<-resid_dat2 %>% mutate(OSA_ind_hat=case_when(predictted>=0.16 ~ 1,
-                                                        TRUE ~ 0))
-confusion_matrix<-table(resid_dat2$OSA_ind_hat,resid_dat2$actual,
-                        dnn=list("Predictted","Actual"))
+resid_dat<-resid_dat %>% 
+  mutate(MORT_1YR_hat=case_when(predicted>=0.2 ~ 1,
+                               TRUE ~ 0))
+confusion_matrix<-table(resid_dat$MORT_1YR,resid_dat$actual,
+                        dnn=list("predicted","Actual"))
 
 confusion_matrix
 ```
 
-This confusion matrix suggests that model fit2 results in
-- TP = 202; 
-- TN = 416; 
-- FP = 707; 
-- FN = 48
-
 ```{r}
-# TP<-confusion_matrix[2,2]
-# TN<-confusion_matrix[1,1]
-# FP<-confusion_matrix[2,1]
-# FN<-confusion_matrix[1,2]
-
-TP<-202
-TN<-416
-FP<-707
-FN<-48
+TP<-confusion_matrix[2,2]
+TN<-confusion_matrix[1,1]
+FP<-confusion_matrix[2,1]
+FN<-confusion_matrix[1,2]
 
 Ture_case<-TP+FN
 False_case<-TN+FP
@@ -268,46 +212,22 @@ sensitivity
 specificity
 ```
 
+```{r}
+pos<-TP+FN
+ppv<-TP/pos
+ppv
+```
+
 
 * Area under reciever operating curve (AUROC, AUC, ROC): 
 
 ```{r}
-fit2_roc<-pROC::roc(resid_dat2$actual, resid_dat2$predictted)
-
-full_roc<-data.frame(cutoff=fit2_roc$thresholds,
-                     sensitivity=fit2_roc$sensitivities,
-                     specificity=fit2_roc$specificities)
-full_roc
-```
-
-
-```{r}
-ggplot(full_roc,aes(y=sensitivity, x=1-specificity))+
-  geom_point(size=2)+ geom_line()+geom_abline(linetype=2)+
-  labs(subtitle = paste0("AUC:",round(fit2_roc$auc,4)))
-```
-
-
-As you can see from the above example, we don't see a lot of variations in the predictted values as a result of limited information provided in covariate (also very low AUC). In stead of using the discretized bmi (non-overweight group vs. overweight group), you may want to build a logistic model against the raw BMI value (continuous), which provides you with more specific relationship between BMI and sleep apnea risk, and more precise prediction results:
-
-```{r bmi_sa_glm}
-fit3<-glm(OSA_ind ~ bmi_median, data=idd_bmi, family=binomial())
-summary(fit3)
-```
-
-
-```{r}
-resid_dat3<-data.frame(actual=fit3$data$OSA_ind,
-                       predictted=fit3$fitted.values,
-                       residual=fit3$residuals)
-
-fit3_roc<-pROC::roc(resid_dat3$actual, resid_dat3$predictted)
+fit3_roc<-pROC::roc(resid_dat$actual, resid_dat$predicted)
 
 full_roc<-data.frame(cutoff=fit3_roc$thresholds,
                      sensitivity=fit3_roc$sensitivities,
                      specificity=fit3_roc$specificities)
-
-head(full_roc)
+full_roc
 ```
 
 
@@ -316,35 +236,3 @@ ggplot(full_roc,aes(y=sensitivity, x=1-specificity))+
   geom_point(size=2)+ geom_line()+geom_abline(linetype=2)+
   labs(subtitle = paste0("AUC:",round(fit3_roc$auc,4)))
 ```
-
-
-*******************************************************************************************************************
-
-## Model Selection
-
-You can enrich your models by adding more predictors. For example, I may want to add `AGE_AT_AUTISM` as another possible risk factors for sleep apnea.
-
-```{r}
-fit4<-glm(OSA_ind ~ bmi_median+AGE_AT_FIRSTDX, data=idd_bmi, family=binomial())
-summary(fit4)
-
-fit4_roc<-pROC::roc(fit4$y, fit4$fitted)
-```
-
-
-To compare which model works better, we could either compare AUCs, such as:
-
-```{r}
-pROC::ggroc(list(Model1=fit3_roc,
-                 Model2=fit4_roc))+
-  geom_abline(intercept=1,linetype=2)+
-  labs(subtitle = paste0("AUC1:",round(fit3_roc$auc,4),"\n",
-                         "AUC2:",round(fit4_roc$auc,4)))
-```
-
-Or more rigorously, you can perform an ANOVA test to compare which model resulted in less error, as follows:
-
-```{r}
-anova(fit3,fit4,test="LRT")
-```
-
