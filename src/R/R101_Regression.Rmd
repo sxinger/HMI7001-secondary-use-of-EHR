@@ -34,7 +34,8 @@ ggplot(aset, aes(x=AGE_AT_ALS1DX,y=RILUZ_DUR))+
 
 
 ```{r}
-fit1<-glm(RILUZ_DUR ~ AGE_AT_ALS1DX, data=aset)
+fit1<-glm(RILUZ_DUR ~ AGE_AT_ALS1DX, 
+          data=aset)
 
 #model summary
 summary.lm(fit1)
@@ -45,14 +46,14 @@ confint(fit1)
 
 *******************************************************************************************************************
 
-**Model Diagnositic**
+**Model Diagnostic**
 
-However, there are three assumptions for regression analysis which you need to check to validate the model results. It is always a good practice to perform **residual analysis** (or diagnositic plots) to visually check the following three assumptions:
+However, there are three assumptions for regression analysis which you need to check to validate the model results. It is always a good practice to perform **residual analysis** (or diagnostic plots) to visually check the following three assumptions:
 
 * Independence: residual vs. predicted plot, or actual vs. predicted plot
-* Homoscedasticity (equal variance): residual vs. preditted plot, or actual vs. predicted plot
+* Homoscedasticity (equal variance): residual vs. predicted plot, or actual vs. predicted plot
 
-```{r}
+```{r,fig.height=4}
 # values needed for model diagnostics
 resid_dat<-data.frame(actual=fit1$data$RILUZ_DUR,
                       predicted=fit1$fitted.values,
@@ -98,10 +99,6 @@ confint(fit2)
 
 ```
 
-```{r}
-exp(-0.03551)
-```
-
 
 ```{r}
 resid_dat<-data.frame(actual=fit2$data$RILUZ_DUR,
@@ -142,6 +139,8 @@ Now, let's look at another question or interest:
 > To estimate if there is an association between `AGE_AT_ALS1DX` and `MORT_1YR`
 
 
+Notice that there are a few patients who we lost of follow-up (i.e., censored before 1 year mark)
+
 ```{r}
 aset %>%
   filter(is.na(MORT_1YR) & is.na(DAYS_ALS1DX_TO_DEATH) & DAYS_ALS1DX_TO_CENSOR <= 365)
@@ -161,10 +160,8 @@ ggplot(aset2, aes(x=AGE_AT_ALS1DX,y=MORT_1YR))+
 ```
 
 
-```{r bmi_cat_sa_glm}
-fit3<-glm(MORT_1YR ~ AGE_AT_ALS1DX, 
-          data=aset2, 
-          family='binomial')
+```{r}
+fit3<-glm(MORT_1YR ~ AGE_AT_ALS1DX, data=aset2,family='binomial') 
 summary(fit3)
 ```
 
@@ -190,7 +187,7 @@ Let's create a rule to further classify the predictions: if predicted probabilit
 resid_dat<-resid_dat %>% 
   mutate(MORT_1YR_hat=case_when(predicted>=0.2 ~ 1,
                                TRUE ~ 0))
-confusion_matrix<-table(resid_dat$MORT_1YR,resid_dat$actual,
+confusion_matrix<-table(resid_dat$MORT_1YR_hat,resid_dat$actual,
                         dnn=list("predicted","Actual"))
 
 confusion_matrix
@@ -213,7 +210,7 @@ specificity
 ```
 
 ```{r}
-pos<-TP+FN
+pos<-TP+FP
 ppv<-TP/pos
 ppv
 ```
@@ -236,3 +233,4 @@ ggplot(full_roc,aes(y=sensitivity, x=1-specificity))+
   geom_point(size=2)+ geom_line()+geom_abline(linetype=2)+
   labs(subtitle = paste0("AUC:",round(fit3_roc$auc,4)))
 ```
+
