@@ -19,7 +19,10 @@ knitr::opts_chunk$set(message=F,
 pacman::p_load(tidyverse,pROC,leaps)
 
 #load data
-idd_bmi<-readRDS("./idd_bmi_final.rda")
+aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda") %>%
+  filter(!(is.na(MORT_1YR) & is.na(DAYS_ALS1DX_TO_DEATH) & DAYS_ALS1DX_TO_CENSOR <= 365)) %>%
+  mutate(SEX_F = case_when(SEX=='F' ~ 1,
+                           TRUE ~ 0))
 ```
 
 **************************************************************************************************
@@ -27,72 +30,63 @@ idd_bmi<-readRDS("./idd_bmi_final.rda")
 
 Let's recall the logistic model we built last time to answer the research question:
 
-> What are the risk factors for developing obstructive sleep apnea (OSA) among adult IDD patients? Can we build a predictive model for predicting likelihood of OSA among new IDD patients?
+> What are the risk factors for 1-year mortality among the ALS patients? 
 
-We built two logistic regression models, with different set of predictors: 
+We built one logistic regression model, with only age as the predictor: 
 
-$$ Model 1: OSA\_ind = b0 + b1*bmi\_median $$
+$$ Model 1: MORT\_1YR = b0 + b1*AGE\_AT\_ALS1DX $$
 
 ```{r}
-fit1<-glm(OSA_ind ~ bmi_median, data=idd_bmi, family=binomial())
+fit1<-glm(MORT_1YR ~ AGE_AT_ALS1DX, data=aset, family=binomial())
 summary(fit1)
 ```
 
-$$ Model 2: OSA\_ind = b0 + b1*bmi\_median + b2*age\_at\_firstdx$$
+Let's try add in another variable: SEX_F
+
+$$ Model 2: MORT\_1YR = b0 + b1*AGE\_AT\_ALS1DX + b2*SEX\_F $$
 
 ```{r}
-fit2<-glm(OSA_ind ~ bmi_median+AGE_AT_FIRSTDX, data=idd_bmi, family=binomial())
+fit2<-glm(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F, data=aset, family=binomial())
 summary(fit2)
 
 anova(fit1,fit2,test="LRT")
 ```
 
-What happens if we add `sex_f_ind` to the model, such that
+What happens if we add `RILUZ_IND` to the model, such that
 
-$$ Model 3: OSA\_ind = b0 + b1*bmi\_median + b2*age + b3*sex\_f\_ind $$
+$$ Model 3: MORT\_1YR = b0 + b1*AGE\_AT\_ALS1DX + b2*SEX\_F + b3*RILUZ\_IND $$
 
 ```{r}
-fit3<-glm(OSA_ind ~ bmi_median+AGE_AT_FIRSTDX+sex_f_ind, data=idd_bmi, family=binomial())
+fit3<-glm(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND, data=aset, family=binomial())
 summary(fit3)
 
 anova(fit2,fit3,test="LRT")
 ```
 
-Should we keep `sex_f_ind` in the final model, then? Should we add other covariates (e.g. `race` or `diagnosis`) to the model in order to achieve better performance? There is a systemetic way to `scan` all relavent covariates independently or sequentially, to identify the set of covariates that are more likely to be associate with the outcome than the others. 
+Should we keep `SEX_F` and `RILUZ_IND` in the final model, then? Should we add other covariates to the model in order to achieve better performance? There is a systemetic way to `scan` all relavent covariates independently or sequentially, to identify the set of covariates that are more likely to be associate with the outcome than the others. 
 
 
 ## Feature Selection
-
-**Feature selection** refers to filtering of variables before building a predictive model. Algorithms may be able to handle “a lot” of variables, but selecting important ones is advantageous:
-* Less likely to introduce “noise” by having irrelevant variables, and hence, less chance of overfitting
-* Model building proceeds more quickly
-* Models are easier to interpret
-
-
-###  Methods for Feature Selection
-
-* **Filter-based Method**: we first specify some measures of association (e.g. Pearson correlation, odds ratio, etc.), and then rank and filter features based on that measure. Ex: Univariate Analysis
-
-* **Wrapper-based Method**: model-based methods that consider the selection of a set of features as a systematic search problem. Ex: Stepwise Regression Model
-
-* **Embedded Method**: integrative algorithms with built-in feature selection mechanisms
 
 
 ### A Filter-based method – Univariate Analysis
 
 * Step 1: Identify the measure of association between outcome and variable/feature of interest.
 
-> recall that our outcome variable `OSA_ind` is binary, I will chose to use odds ratio as my filtering criteria
+> recall that our outcome variable `MORT_1YR` is binary, I will chose to use odds ratio as my filtering criteria
 
 
 * Step 2: Calculate the measure for each one of the variable/feature and rank them from the highest to the lowest.
 
 ```{r}
-var_to_be_filtered<-c("bmi_median",
-                      "AGE_AT_FIRSTDX",
-                      "sex_f_ind",
-                      "DIAGNOSIS",
-                      "RACE")
+var_to_be_filtered<-c("AGE_AT_ALS1DX ",
+                      "SEX_F",
+                      "RILUZ_IND",
+                      "RILUZ_DUR",
+                      "RACE_black",
+                      "RACE_white",
+                      "RACE_OT",
+                      "RACE_UN")
 
 odds_ratio<-data.frame(variable=as.character(),
                        odds_ratio=as.numeric(),
@@ -101,8 +95,8 @@ odds_ratio<-data.frame(variable=as.character(),
 for (vari in var_to_be_filtered){
   cat("test variable:",vari,"\n")
   
-  fit<-glm(as.formula(paste0("OSA_ind~",vari)),
-           data=idd_bmi,
+  fit<-glm(as.formula(paste0("MORT_1YR ~",vari)),
+           data=aset,
            family=binomial()
            )
   
@@ -115,8 +109,8 @@ for (vari in var_to_be_filtered){
   
 }
 
-odds_ratio<-odds_ratio %>%
-  arrange(p_value)
+odds_ratio<-odds_ratio %>% arrange(p_value)
+odds_ratio
 ```
 
 
@@ -132,8 +126,8 @@ var_selected
 ```
 
 ```{r}
-fit_filter<-glm(OSA_ind ~ DIAGNOSIS + bmi_median + AGE_AT_FIRSTDX, 
-                data = idd_bmi, family = binomial())
+fit_filter<-glm(MORT_1YR ~ AGE_AT_ALS1DX + RILUZ_DUR, 
+                data = aset, family = binomial())
 summary(fit_filter)
 ```
 
@@ -145,14 +139,14 @@ anova(fit3,fit_filter,test="LRT")
 ```
 
 
-```{r}
+```{r, fig.height=5}
 # compare using ANOVA test for their residuals
-fit2_roc<-pROC::roc(fit2$y, fit2$fitted)
+fit3_roc<-pROC::roc(fit3$y, fit3$fitted)
 fit_filter_roc<-pROC::roc(fit_filter$y, fit_filter$fitted)
-pROC::ggroc(list(Model1=fit2_roc,
+pROC::ggroc(list(Model1=fit3_roc,
                  Model2=fit_filter_roc))+
   geom_abline(intercept=1,linetype=2)+
-  labs(subtitle = paste0("AUC1:",round(fit2_roc$auc,4),"\n",
+  labs(subtitle = paste0("AUC1:",round(fit3_roc$auc,4),"\n",
                          "AUC2:",round(fit_filter_roc$auc,4)))
 ```
 
@@ -163,21 +157,24 @@ pROC::ggroc(list(Model1=fit2_roc,
 
 ```{r}
 # Specify a null model with no predictors
-null_model <- glm(OSA_ind ~ 1, 
-                  data = idd_bmi, family = binomial())
+null_model <- glm(MORT_1YR ~ 1, 
+                  data = aset, family = binomial())
 
 # Specify the full model using all of the potential predictors
-full_model <- glm(OSA_ind ~ bmi_median+AGE_AT_FIRSTDX+sex_f_ind+DIAGNOSIS+RACE, 
-                  data = idd_bmi, family = binomial())
+full_model <- glm(MORT_1YR ~ AGE_AT_ALS1DX+ SEX_F+RILUZ_IND+RILUZ_DUR+RACE_black+RACE_OT+RACE_UN, 
+                  data = aset, family = binomial())
 
 # Use a forward stepwise algorithm to build a parsimonious model
 step_model <- step(null_model,
                    scope = list(lower = null_model, upper = full_model),
                    direction = "forward")
+```
 
+
+```{r}
 # Estimate the stepwise predictted probability
-fit_forward<-glm(OSA_ind ~ DIAGNOSIS + bmi_median + AGE_AT_FIRSTDX + sex_f_ind, 
-                  data = idd_bmi, family = binomial())
+fit_forward<-glm(MORT_1YR ~ RILUZ_DUR + RILUZ_IND + AGE_AT_ALS1DX, 
+                  data = aset, family = binomial())
 
 summary(fit_forward)
 ```
@@ -186,21 +183,25 @@ summary(fit_forward)
 
 ```{r}
 # Specify a null model with no predictors
-null_model <- glm(OSA_ind ~ 1, 
-                  data = idd_bmi, family = binomial())
+null_model <- glm(MORT_1YR ~ 1, 
+                  data = aset, family = binomial())
 
 # Specify the full model using all of the potential predictors
-full_model <- glm(OSA_ind ~ bmi_median+AGE_AT_FIRSTDX+sex_f_ind+DIAGNOSIS+RACE, 
-                  data = idd_bmi, family = binomial())
+full_model <- glm(MORT_1YR ~ AGE_AT_ALS1DX+ SEX_F+RILUZ_IND+RILUZ_DUR+RACE_black+RACE_OT+RACE_UN, 
+                  data = aset, family = binomial())
 
 # Use a forward stepwise algorithm to build a parsimonious model
 step_model <- step(full_model,
                    scope = list(lower = null_model, upper = full_model),
                    direction = "backward")
+```
 
+
+
+```{r}
 # Estimate the stepwise predictted probability
-fit_backward<-glm(OSA_ind ~ DIAGNOSIS + bmi_median + AGE_AT_FIRSTDX + sex_f_ind, 
-                  data = idd_bmi, family = binomial())
+fit_backward<-glm(MORT_1YR ~ RILUZ_DUR + RILUZ_IND + AGE_AT_ALS1DX, 
+                  data = aset, family = binomial())
 ```
 
 
@@ -208,30 +209,25 @@ fit_backward<-glm(OSA_ind ~ DIAGNOSIS + bmi_median + AGE_AT_FIRSTDX + sex_f_ind,
 
 ```{r}
 # Specify a null model with no predictors
-null_model <- glm(OSA_ind ~ 1, 
-                  data = idd_bmi, family = binomial())
+null_model <- glm(MORT_1YR ~ 1, 
+                  data = aset, family = binomial())
 
 # Specify the full model using all of the potential predictors
-full_model <- glm(OSA_ind ~ bmi_median+AGE_AT_FIRSTDX+sex_f_ind+DIAGNOSIS+RACE, 
-                  data = idd_bmi, family = binomial())
+full_model <- glm(MORT_1YR ~ AGE_AT_ALS1DX+ SEX_F+RILUZ_IND+RILUZ_DUR+RACE_black+RACE_OT+RACE_UN, 
+                  data = aset, family = binomial())
 
-# Use a forward stepwise algorithm to build a parsimonious model
+# Use a bi-directional stepwise algorithm to build a parsimonious model
 step_model <- step(null_model,
                    scope = list(lower = null_model, upper = full_model),
                    direction = "both")
-
-# Estimate the stepwise predictted probability
-fit_both<-glm(OSA_ind ~ DIAGNOSIS + bmi_median + AGE_AT_FIRSTDX + sex_f_ind, 
-                  data = idd_bmi, family = binomial())
 ```
 
 
-Ultimately, all the three stepwise regression models are suggesting the following final model: 
-
-$$ OSA\_ind = b0 + b1*DIAGNOSIS + b2*bmi\_median + b3*AGE\_AT\_FIRSTDX + b4*sex\_f\_ind $$ 
 
 ```{r}
-summary(fit_both)
+# Estimate the stepwise predictted probability
+fit_both<-glm(MORT_1YR ~ RILUZ_DUR + RILUZ_IND + AGE_AT_ALS1DX, 
+              data = aset, family = binomial())
 ```
 
 Let's compare this model with fit_filter: 
