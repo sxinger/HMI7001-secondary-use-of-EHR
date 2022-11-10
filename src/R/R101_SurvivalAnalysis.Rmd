@@ -16,7 +16,7 @@ knitr::opts_chunk$set(message=F,
                       fig.height=4)
 
 #load packages
-pacman::p_load(tidyverse,survival,survminer)
+pacman::p_load(tidyverse,survival,survminer,gtsummary)
 
 #load data
 aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda") %>%
@@ -55,6 +55,71 @@ ggsurvplot(fit = km_fit,
 ```
 
 
+### Estimate 𝑥-year survival
+
 ```{r}
 summary(km_fit,times = 365.25*c(1:5))
 ```
+
+### Estimate median survival time
+
+```{r}
+survfit(Surv(time, status) ~ 1, data = aset) %>% 
+  tbl_survfit(
+    probs = 0.5,
+    label_header = "**Median survival (95% CI)**"
+  )
+```
+
+### Stratified KM curves
+
+```{r,fig.height=8,fig.width=12}
+ggsurvplot(
+    fit = survfit(Surv(time,status) ~ RILUZ_IND, data = aset),
+    pval = TRUE, conf.int = TRUE,risk.table = TRUE,
+    surv.median.line = "hv",linetype = "strata", 
+    xlab = "Days", break.x.by = 365,
+    ylab = "Mortality Endpoint")
+```
+
+
+```{r,fig.height=8,fig.width=12}
+ggsurvplot(
+    fit = survfit(Surv(time,status) ~ SEX_F, data = aset),
+    pval = TRUE, conf.int = TRUE,risk.table = TRUE,
+    surv.median.line = "hv",linetype = "strata", 
+    xlab = "Days", break.x.by = 365,
+    ylab = "Mortality Endpoint")
+```
+
+
+## Cox Proportional Hazard Regression Model
+
+```{r}
+cox_fit<-coxph(Surv(time, status) ~ RILUZ_IND, data = aset)
+summary(cox_fit)
+```
+
+
+```{r}
+coxph(Surv(time, status) ~ RILUZ_IND, data = aset) %>% 
+  tbl_regression(exp = TRUE)
+```
+
+
+```{r}
+coxph(Surv(time, status) ~ SEX_F, data = aset) %>% 
+  tbl_regression(exp = TRUE)
+```
+
+
+### Model Diagnostics
+
+```{r}
+res<-cox.zph(cox_fit)
+plot(res)
+```
+
+
+## Accelerated Failur Time
+
