@@ -1,0 +1,60 @@
+---
+title: "Survival Analysis"
+author: "Xing Song"
+date: '2022-11-10'
+output: html_document
+---
+
+Let's do some preparation for the class by running the following chunk of codes
+
+```{r setup}
+#set up rmd 
+knitr::opts_chunk$set(message=F,
+                      warning=F,
+                      echo=F,
+                      fig.width=6,
+                      fig.height=4)
+
+#load packages
+pacman::p_load(tidyverse,survival,survminer)
+
+#load data
+aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda") %>%
+  mutate(SEX_F = case_when(SEX=='F' ~ 1,
+                           TRUE ~ 0)) %>%
+  mutate(status=MORT_IND,
+         time=coalesce(DAYS_ALS1DX_TO_DEATH,DAYS_ALS1DX_TO_CENSOR))
+```
+
+
+```{r}
+ggplot(aset,aes(x=time))+
+  geom_density(aes(fill=as.factor(status)),alpha=0.5)
+
+```
+
+## Kaplan-Meier Curve
+
+Let's first get familiar with survival object. The `Surv()` function creates a survival object that contains three parts: a numerical part that is the survival time; a `+` or `:1` symbol suggesting the subject being censored or an event. For example,
+
+```{r}
+Surv(aset$time,aset$status)[1:10]
+```
+
+```{r}
+km_fit<-survfit(Surv(time,status) ~ 1, data = aset)
+```
+
+
+```{r}
+ggsurvplot(fit = km_fit,
+           pval = TRUE, conf.int = TRUE,risk.table = TRUE,
+           surv.median.line = "hv",linetype = "strata", 
+           xlab = "Days", break.x.by = 365*2,
+           ylab = "Mortality Endpoint")
+```
+
+
+```{r}
+summary(km_fit,times = 365.25*c(1:5))
+```
