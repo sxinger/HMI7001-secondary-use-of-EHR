@@ -16,7 +16,10 @@ knitr::opts_chunk$set(message=F,
                       fig.height=4)
 
 #load packages
-pacman::p_load(tidyverse,survival,survminer,gtsummary)
+pacman::p_load(tidyverse,
+               survival,
+               survminer,
+               gtsummary)
 
 #load data
 aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda") %>%
@@ -26,12 +29,6 @@ aset<-readRDS("C:/Users/Administrator/Documents/classHMI7001/data/final_set.rda"
          time=coalesce(DAYS_ALS1DX_TO_DEATH,DAYS_ALS1DX_TO_CENSOR))
 ```
 
-
-```{r}
-ggplot(aset,aes(x=time))+
-  geom_density(aes(fill=as.factor(status)),alpha=0.5)
-
-```
 
 ## Kaplan-Meier Curve
 
@@ -45,6 +42,12 @@ Surv(aset$time,aset$status)[1:10]
 km_fit<-survfit(Surv(time,status) ~ 1, data = aset)
 ```
 
+### Estimate 𝑥-year survival, or life table
+
+```{r}
+summary(km_fit,times = 365.25*c(1:5))
+```
+
 
 ```{r}
 ggsurvplot(fit = km_fit,
@@ -52,13 +55,6 @@ ggsurvplot(fit = km_fit,
            surv.median.line = "hv",linetype = "strata", 
            xlab = "Days", break.x.by = 365*2,
            ylab = "Mortality Endpoint")
-```
-
-
-### Estimate 𝑥-year survival
-
-```{r}
-summary(km_fit,times = 365.25*c(1:5))
 ```
 
 ### Estimate median survival time
@@ -70,6 +66,7 @@ survfit(Surv(time, status) ~ 1, data = aset) %>%
     label_header = "**Median survival (95% CI)**"
   )
 ```
+
 
 ### Stratified KM curves
 
@@ -96,6 +93,12 @@ ggsurvplot(
 ## Cox Proportional Hazard Regression Model
 
 ```{r}
+ggplot(aset,aes(x=time))+
+  geom_density(aes(fill=as.factor(status)),alpha=0.5)
+```
+
+
+```{r}
 cox_fit<-coxph(Surv(time, status) ~ RILUZ_IND, data = aset)
 summary(cox_fit)
 ```
@@ -112,14 +115,55 @@ coxph(Surv(time, status) ~ SEX_F, data = aset) %>%
   tbl_regression(exp = TRUE)
 ```
 
+```{r}
+cox_fit2<-coxph(Surv(time, status) ~ AGE_AT_ALS1DX + RILUZ_IND + RILUZ_DUR , data = aset)
+summary(cox_fit2)
+```
+
 
 ### Model Diagnostics
 
 ```{r}
-res<-cox.zph(cox_fit)
+res<-cox.zph(cox_fit2)
 plot(res)
 ```
 
 
-## Accelerated Failur Time
 
+## Accelerated Failure Time Model
+
+```{r}
+aft_fit1<-survreg(Surv(time, status) ~ AGE_AT_ALS1DX + RILUZ_IND + RILUZ_DUR, data = aset,
+              dist = "exp")
+summary(aft_fit1)
+```
+
+
+```{r}
+aft_fit2<-survreg(Surv(time, status) ~ AGE_AT_ALS1DX + RILUZ_IND + RILUZ_DUR, data = aset,
+              dist = "weib")
+summary(aft_fit2)
+```
+
+
+```{r}
+aft_fit3<-survreg(Surv(time, status) ~ AGE_AT_ALS1DX + RILUZ_IND + RILUZ_DUR, data = aset,
+              dist = "logl")
+summary(aft_fit3)
+```
+
+
+```{r}
+aft_fit4<-survreg(Surv(time, status) ~ AGE_AT_ALS1DX + RILUZ_IND + RILUZ_DUR, data = aset,
+              dist = "logn")
+summary(aft_fit4)
+```
+
+
+```{r}
+AIC(aft_fit1,
+    aft_fit2,
+    aft_fit3,
+    aft_fit4,
+    cox_fit2)
+```
