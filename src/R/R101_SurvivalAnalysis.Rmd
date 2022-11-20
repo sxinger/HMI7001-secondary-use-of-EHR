@@ -129,7 +129,6 @@ plot(res)
 ```
 
 
-
 ## Accelerated Failure Time Model
 
 ```{r}
