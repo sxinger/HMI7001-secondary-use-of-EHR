@@ -136,15 +136,17 @@ Random Forest is **an ensemble** of multiple decision trees. An ensemble is simp
 - maxnodes: Maximum number of terminal nodes trees in the forest can have
 
 ```{r fit_rf}
-fit_rf10<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
+aset<-aset %>% mutate(MORT_1YR_fac = as.factor(MORT_1YR))
+
+fit_rf10<-randomForest(MORT_1YR_fac ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
                        data=aset,keep.forest = T, proximity = T, importance=T,
                        ntree = 10, mtry=0.8)
 
-fit_rf50<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
+fit_rf50<-randomForest(MORT_1YR_fac ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
                        data=aset, keep.forest = T, proximity = T, importance=T,
                        ntree = 50, mtry=0.8)
 
-fit_rf200<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
+fit_rf200<-randomForest(MORT_1YR_fac ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
                         data=aset, keep.forest = T, proximity = T, importance=T,
                         ntree = 200, mtry=0.8)
 ```
@@ -154,19 +156,19 @@ fit_rf200<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR
 rf10_pred<-predict(fit_rf10,
                    newdata=aset[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
                    type="prob")
-fit_rf10_roc<-pROC::roc(aset$MORT_1YR,rf10_pred[,2])
+fit_rf10_roc<-pROC::roc(aset$MORT_1YR_fac,rf10_pred[,2])
 #========================================
 
 rf50_pred<-predict(fit_rf50,
                    newdata=aset[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
                    type="prob")
-fit_rf50_roc<-pROC::roc(aset$MORT_1YR,rf50_pred[,2])
+fit_rf50_roc<-pROC::roc(aset$MORT_1YR_fac,rf50_pred[,2])
 #========================================
 
 rf200_pred<-predict(fit_rf200,
                     newdata=aset[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
                     type="prob")
-fit_rf200_roc<-pROC::roc(aset$MORT_1YR,rf200_pred[,2])
+fit_rf200_roc<-pROC::roc(aset$MORT_1YR_fac,rf200_pred[,2])
 #========================================
 
 pROC::ggroc(list(Regression=fit_lr_roc,
@@ -276,7 +278,7 @@ pROC::ggroc(list(Decision_Tree_tr=fit_tree_tr_roc,
 
 
 ```{r rf_val}
-fit_rf10<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
+fit_rf10<-randomForest(MORT_1YR_fac ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
                      data=train,ntree = 10, mtry=0.8, keep.forest = T, proximity = T, importance=T)
 rf10_pred_tr<-predict(fit_rf10,
                       newdata=train[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
@@ -285,11 +287,11 @@ rf10_pred_ts<-predict(fit_rf10,
                       newdata=test[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
                       type="prob")
 
-fit_rf10_tr_roc<-pROC::roc(train$MORT_1YR,rf10_pred_tr[,2])
-fit_rf10_ts_roc<-pROC::roc(test$MORT_1YR,rf10_pred_ts[,2])
+fit_rf10_tr_roc<-pROC::roc(train$MORT_1YR_fac,rf10_pred_tr[,2])
+fit_rf10_ts_roc<-pROC::roc(test$MORT_1YR_fac,rf10_pred_ts[,2])
 #=================================================
 
-fit_rf50<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
+fit_rf50<-randomForest(MORT_1YR_fac ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
                      data=train,ntree = 50, mtry=0.8, keep.forest = T, proximity = T, importance=T)
 rf50_pred_tr<-predict(fit_rf50,
                       newdata=train[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
@@ -298,11 +300,11 @@ rf50_pred_ts<-predict(fit_rf50,
                       newdata=test[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
                       type="prob")
 
-fit_rf50_tr_roc<-pROC::roc(train$MORT_1YR,rf50_pred_tr[,2])
-fit_rf50_ts_roc<-pROC::roc(test$MORT_1YR,rf50_pred_ts[,2])
+fit_rf50_tr_roc<-pROC::roc(train$MORT_1YR_fac,rf50_pred_tr[,2])
+fit_rf50_ts_roc<-pROC::roc(test$MORT_1YR_fac,rf50_pred_ts[,2])
 #=================================================
 
-fit_rf200<-randomForest(MORT_1YR ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
+fit_rf200<-randomForest(MORT_1YR_fac ~ AGE_AT_ALS1DX + SEX_F + RILUZ_IND + RILUZ_DUR + RACE, 
                      data=train,ntree = 200, mtry=0.8, keep.forest = T, proximity = T, importance=T)
 rf200_pred_tr<-predict(fit_rf200,
                       newdata=train[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
@@ -311,8 +313,8 @@ rf200_pred_ts<-predict(fit_rf200,
                       newdata=test[,c('AGE_AT_ALS1DX','SEX_F','RILUZ_IND','RILUZ_DUR','RACE')],
                       type="prob")
 
-fit_rf200_tr_roc<-pROC::roc(train$MORT_1YR,rf200_pred_tr[,2])
-fit_rf200_ts_roc<-pROC::roc(test$MORT_1YR,rf200_pred_ts[,2])
+fit_rf200_tr_roc<-pROC::roc(train$MORT_1YR_fac,rf200_pred_tr[,2])
+fit_rf200_ts_roc<-pROC::roc(test$MORT_1YR_fac,rf200_pred_ts[,2])
 #=================================================
 
 pROC::ggroc(list(Random_Forest10_tr=fit_rf10_tr_roc,
@@ -352,3 +354,48 @@ pROC::ggroc(list(Regression=fit_reg_ts_roc,
                          ))
 ```
 
+How about calibration? 
+
+```{r}
+# source: https://github.com/sxinger/utils/blob/master/analysis_util.R
+get_calibr<-function(pred,real,n_bin=20){
+  calib<-data.frame(pred=pred,
+                    y=real) %>%
+    arrange(pred) %>%
+    dplyr::mutate(pred_bin = cut(pred,
+                                 breaks=unique(quantile(pred,0:(n_bin)/(n_bin))),
+                                 include.lowest=T,
+                                 labels=F)) %>%
+    ungroup %>% group_by(pred_bin) %>%
+    dplyr::summarize(expos=n(),
+                     bin_lower=min(pred),
+                     bin_upper=max(pred),
+                     bin_mid=median(pred),
+                     y_agg = sum(y),
+                     pred_p = mean(pred),
+                     .groups = "drop") %>%
+    dplyr::mutate(y_p=y_agg/expos) %>%
+    dplyr::mutate(binCI_lower = pmax(0,pred_p-1.96*sqrt(y_p*(1-y_p)/expos)),
+                  binCI_upper = pred_p+1.96*sqrt(y_p*(1-y_p)/expos))
+  
+  return(calib)
+}
+```
+
+
+```{r}
+# assume there is no row reordering
+fit_reg_calib<-get_calibr(pred=reg_ts_pred,real=test$MORT_1YR,n_bin=10) %>% mutate(model="regression")
+fit_tree_calib<-get_calibr(pred=tree_ts_pred[,2],real=test$MORT_1YR,n_bin=10) %>% mutate(model="tree")
+fit_rf_calib<-get_calibr(pred=rf200_pred_ts[,2],real=test$MORT_1YR,n_bin=10) %>% mutate(model="rf")
+
+calib_df<-fit_reg_calib %>%
+  bind_rows(fit_tree_calib) %>%
+  bind_rows(fit_rf_calib)
+
+ggplot(calib_df,aes(x=pred_p,y=y_p,color=model))+
+  geom_point() +
+  geom_smooth(method='lm',formula='y~x')+
+  geom_abline(intercept = 0, slope = 1)
+  
+```
